@@ -6,6 +6,7 @@ import ReportDetailPage from "../pages/user/report_detail";
 import ReportSubmissionPage from "../pages/user/report_submission";
 import LoginPage from "../pages/user/login";
 import RegisterPage from "../pages/user/register";
+import UserDashboardPage from "../pages/user/dashboard";
 
 const router = createBrowserRouter([
   {
@@ -21,7 +22,7 @@ const router = createBrowserRouter([
     element: <ReportDetailPage />,
   },
   {
-    path: "/admin-dashboard",
+    path: "/admin/dashboard",
     element: <AdminDashboardPage />,
   },
   {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <RegisterPage />,
+  },
+  {
+    path: "/dashboard",
+    element: <UserDashboardPage />,
   },
 ]);
 
