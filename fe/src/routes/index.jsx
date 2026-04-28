@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom"
-import Home from "../pages/home";
-import ReportPage from "../pages/reports";
+import Home from "../pages/user/home";
+import ReportPage from "../pages/user/reports";
+import AdminDashboardPage from "../pages/admin/dashboard";
 
 const router = createBrowserRouter([
     {
@@ -10,6 +11,10 @@ const router = createBrowserRouter([
     {
         path : '/reports',
         element : <ReportPage/>
+    },
+    {
+        path: '/admin-dashboard',
+        element : <AdminDashboardPage/>
     }
 ])
 
