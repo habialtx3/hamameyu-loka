@@ -4,6 +4,7 @@ import ReportPage from "../pages/user/reports";
 import AdminDashboardPage from "../pages/admin/dashboard";
 import ReportDetailPage from "../pages/user/report_detail";
 import ReportSubmissionPage from "../pages/user/report_submission";
+import LoginPage from "../pages/user/login";
 
 const router = createBrowserRouter([
     {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
     {
         path: '/reports/add',
         element : <ReportSubmissionPage/>
+    },
+     {
+        path: '/login',
+        element : <LoginPage/>
     }
 ])
 
