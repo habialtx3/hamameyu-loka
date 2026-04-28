@@ -7,6 +7,7 @@ import ReportSubmissionPage from "../pages/user/report_submission";
 import LoginPage from "../pages/user/login";
 import RegisterPage from "../pages/user/register";
 import UserDashboardPage from "../pages/user/dashboard";
+import MapReportPage from "../pages/user/map_report";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <UserDashboardPage />,
+  },
+  {
+    path: "/map-report",
+    element: <MapReportPage />,
   },
 ]);
 

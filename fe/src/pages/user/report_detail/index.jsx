@@ -72,7 +72,7 @@ export default function ReportDetailPage() {
             {/* Illustration Area */}
             <div className="flex flex-col items-center mb-10">
               <img 
-                src="https://placehold.co/400x250/e2e8f0/64748b?text=Ilustrasi+Perbaikan" 
+                src="/assets/illust/on_progress.png" 
                 alt="Ilustrasi Laporan Sedang Ditangani" 
                 className="w-full max-w-sm object-contain mb-4 rounded-xl"
               />
