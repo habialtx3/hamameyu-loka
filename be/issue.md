@@ -1,144 +1,135 @@
-# Issue: Refactor Location Fields & Adjust DB Port to 3036 (Express + MySQL Raw Query)
+# Issue: Fix Database Connection, Port Configuration, and Auto-Create DB
 
-## 🎯 Background & Current State
-We have already successfully built the **Envireport Backend MVP** using Node.js, Express, and MySQL (Raw Queries). 
-Currently, the codebase contains:
-- Standardized API response wrappers (`src/utils/response.js`) and a global error handling middleware.
-- A raw MySQL database pool connection wrapper (`src/config/db.js`).
-- Complete MVP endpoint routes, controllers, and services for **Reports** (`POST /reports`, `GET /reports`, `GET /reports/:id`, `PATCH /reports/:id/status`).
-- Basic location details stored inside the `locations` table.
+## 🎯 Konteks Masalah
+Saat dilakukan testing API menggunakan Postman, server tidak dapat memproses request dengan baik (terjadi error atau crash). Berdasarkan pengecekan, terdapat beberapa masalah utama:
+1. **Port MySQL Salah:** Konfigurasi `.env` dan `db.js` menggunakan port `3036`, padahal MySQL di lokal berjalan di port default `3306`.
+2. **Kredensial Password Kosong:** Lupa mengisi `DB_PASSWORD` di `.env` yang menyebabkan koneksi ditolak oleh MySQL.
+3. **Database Tidak Terbuat Otomatis (Auto-Create Failed):** Aplikasi langsung mencoba melakukan koneksi `pool` ke database `envireport`. Jika database tersebut belum ada di MySQL server lokal, aplikasi akan langsung *crash* / *error*.
 
 ---
 
-## 🚀 Scope of New Changes
-We need to perform two major updates:
-1. **DB Port Adjustment:** Change the default local MySQL port from `3306` to **`3036`** across configurations.
-2. **Granular Location Details:** Refactor the database schema and backend code to collect detailed resident location details, specifically: **Province (Provinsi)**, **City (Kota)**, **District (Kecamatan)**, **Village (Kelurahan)**, **RT**, **RW**, **Latitude**, and **Longitude**.
+## 🚀 Objektif Tugas Ini
+Memperbaiki mekanisme koneksi database pada backend agar aplikasi menjadi tahan banting (*robust*) dan ramah digunakan (bisa langsung berjalan tanpa perlu *create database* manual di MySQL).
+
+Tugas ini dirancang sangat detail agar programmer junior-mid atau model AI dapat dengan mudah mengikuti dan mengeksekusinya.
 
 ---
 
-## 🛠️ Step-by-Step Implementation Guide
-*Please follow these steps sequentially. Ensure all SQL queries are raw and parameterized!*
+## 🛠️ Panduan Implementasi (Step-by-Step)
+*Penting: Tolong ikuti langkah ini secara berurutan tanpa merusak logika yang sudah ada.*
 
-### 📋 Step 1: Update Port DB Config (`.env` & `src/config/db.js`)
-The local database runs on port `3036` instead of the standard `3306`.
-1. Open [.env](file:///d:/prj/InfiniteLearning/Web/Hamameyu/be/.env) and add/update `DB_PORT=3036`.
-2. Open [db.js](file:///d:/prj/InfiniteLearning/Web/Hamameyu/be/src/config/db.js) and make sure `mysql.createPool` consumes the `process.env.DB_PORT` variable:
-   ```javascript
-   const pool = mysql.createPool({
-     host: process.env.DB_HOST || 'localhost',
-     port: parseInt(process.env.DB_PORT) || 3036, // Adjust to default 3036
-     user: process.env.DB_USER || 'root',
-     password: process.env.DB_PASSWORD || '',
-     database: process.env.DB_NAME || 'envireport',
-     // ... other pool settings
-   });
-   ```
+### 📋 Langkah 1: Perbarui Konfigurasi Environment (`.env`)
+Buka file `.env` dan lakukan penyesuaian nilai:
+1. Ubah `DB_PORT` menjadi `3306`.
+2. Tambahkan password MySQL lokal Anda ke `DB_PASSWORD` (misalnya: `root`, atau biarkan kosong HANYA JIKA MySQL Anda memang tidak di-password).
+**Contoh `.env`:**
+```env
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=masukkan_password_mysql_disini
+DB_NAME=envireport
+DB_PORT=3306
+```
 
-### 📋 Step 2: Refactor Database DDL (`sql/schema.sql` & `sql/seed.sql`)
-1. Open [schema.sql](file:///d:/prj/InfiniteLearning/Web/Hamameyu/be/sql/schema.sql) and modify the `locations` table columns to support:
-   - `province` VARCHAR(100) NOT NULL
-   - `city` VARCHAR(100) NOT NULL
-   - `district` VARCHAR(100) NOT NULL
-   - `village` VARCHAR(100) NOT NULL
-   - `rt` VARCHAR(10) NOT NULL
-   - `rw` VARCHAR(10) NOT NULL
-   - `latitude` DECIMAL(10, 8) NOT NULL
-   - `longitude` DECIMAL(11, 8) NOT NULL
-2. Adjust [seed.sql](file:///d:/prj/InfiniteLearning/Web/Hamameyu/be/sql/seed.sql) to populate mock data that adheres to these new database constraints if applicable.
+### 📋 Langkah 2: Refactor Koneksi Database (`src/config/db.js`)
+Kita perlu mengubah `db.js` agar bisa menjalankan query `CREATE DATABASE IF NOT EXISTS` sebelum membuat `pool`. Karena hal ini bersifat asynchronous, kita akan membungkusnya dalam fungsi `initDB()`.
 
-### 📋 Step 3: Refactor Raw Queries in Service (`src/services/report.service.js`)
-We need to update our service query functions to write and read the new columns:
-1. Update `createReport` function:
-   - The raw `INSERT INTO locations` query must now accept: `province`, `city`, `district`, `village`, `rt`, `rw`, `latitude`, `longitude`.
-   - Update parameter binding array sequentially.
-2. Update `getAllReports` and `getReportById` functions:
-   - Update the raw `SELECT` query so that the joined query grabs `rt` and `rw` columns from `locations`.
-   - Update the mapping format returned by the functions to nest these new columns inside the `location` object (e.g. `rt: r.rt, rw: r.rw`).
+Buka `src/config/db.js` dan ganti seluruh isinya dengan pola berikut:
+```javascript
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-### 📋 Step 4: Refactor Controller Validation (`src/controllers/report.controller.js`)
-We must validate and grab these fields from the request body:
-1. Destructure the new properties from `req.body` in `createReport`:
-   ```javascript
-   const { 
-     title, description, category, priority, 
-     province, city, district, village, rt, rw, latitude, longitude 
-   } = req.body;
-   ```
-2. Update validation to verify all of these are present and reject with a 400 Bad Request error if any are missing:
-   `!title || !description || !category || !province || !city || !district || !village || !rt || !rw || !latitude || !longitude`
-3. Map these newly validated properties to the `location` object passed to `reportService.createReport()`:
-   ```javascript
-   location: {
-     province,
-     city,
-     district,
-     village,
-     rt,
-     rw,
-     latitude: parseFloat(latitude),
-     longitude: parseFloat(longitude)
-   }
-   ```
+let pool;
 
----
+async function initDB() {
+  const host = process.env.DB_HOST || 'localhost';
+  const port = parseInt(process.env.DB_PORT) || 3306;
+  const user = process.env.DB_USER || 'root';
+  const password = process.env.DB_PASSWORD || '';
+  const database = process.env.DB_NAME || 'envireport';
 
-## 🧪 Expected JSON Payloads & Formats
+  // 1. Buat koneksi awal TANPA menyebutkan database
+  const connection = await mysql.createConnection({ host, port, user, password });
+  
+  // 2. Buat database otomatis jika belum ada
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+  await connection.end(); // Tutup koneksi awal
 
-### 📥 POST `/reports` (Multipart form-data)
-**Request Fields:**
-- `title`: "Sampah menumpuk di gang"
-- `description`: "Tumpukan sampah basah belum diangkut 3 hari"
-- `category`: "sampah"
-- `priority`: "medium"
-- `province`: "Jawa Barat"
-- `city`: "Bandung"
-- `district`: "Coblong"
-- `village`: "Dago"
-- `rt`: "03"
-- `rw`: "05"
-- `latitude`: -6.8915
-- `longitude`: 107.6186
-- `images`: *[Upload files]*
+  // 3. Setelah DB dipastikan ada, buat Pool utama
+  pool = mysql.createPool({
+    host,
+    port,
+    user,
+    password,
+    database,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  });
 
-### 📤 GET `/reports/:id` (Detail Response Example)
-Expected consistent JSON response:
-```json
-{
-  "success": true,
-  "message": "Report detail retrieved successfully.",
-  "data": {
-    "id": 1,
-    "user_id": 1,
-    "title": "Sampah menumpuk di gang",
-    "description": "Tumpukan sampah basah belum diangkut 3 hari",
-    "category": "sampah",
-    "status": "pending",
-    "priority": "medium",
-    "created_at": "2026-05-18T04:15:00.000Z",
-    "location": {
-      "id": 1,
-      "province": "Jawa Barat",
-      "city": "Bandung",
-      "district": "Coblong",
-      "village": "Dago",
-      "rt": "03",
-      "rw": "05",
-      "latitude": -6.8915,
-      "longitude": 107.6186
-    },
-    "images": [
-      "/uploads/reports/1715980000000-123456789.jpg"
-    ]
-  }
+  console.log(`✅ Database '${database}' initialized and pool connected.`);
 }
+
+// Helper untuk eksekusi query raw
+const query = async (sql, params) => {
+  if (!pool) throw new Error("Database belum diinisialisasi! (pool is null)");
+  const [results] = await pool.execute(sql, params);
+  return results;
+};
+
+// Export helper query, referensi pool, dan fungsi inisialisasi
+module.exports = {
+  initDB,
+  query,
+  getPool: () => pool
+};
+```
+
+### 📋 Langkah 3: Modifikasi Service Layer (`src/services/report.service.js`)
+Karena kita mengubah `db.js`, cara mengambil koneksi dari `pool` di Service Layer harus disesuaikan.
+Buka `src/services/report.service.js` dan perbarui cara pemanggilan `pool`.
+1. Ubah impor di baris 1 menjadi:
+   ```javascript
+   const { getPool, query } = require('../config/db');
+   ```
+2. Cari bagian `const conn = await pool.getConnection();` (berada di dalam fungsi `createReport`), dan ubah menjadi:
+   ```javascript
+   const pool = getPool();
+   const conn = await pool.getConnection();
+   ```
+
+### 📋 Langkah 4: Modifikasi File Entry Point (`src/server.js`)
+Kita harus menjalankan fungsi `initDB()` terlebih dahulu sebelum aplikasi Express mulai menerima *request* (`app.listen`).
+Buka `src/server.js` dan perbarui isinya menjadi seperti ini:
+```javascript
+const app = require('./app');
+const { initDB } = require('./config/db');
+require('dotenv').config();
+
+const PORT = process.env.PORT || 5000;
+
+// Jalankan inisialisasi Database terlebih dahulu
+initDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`============================================`);
+      console.log(`🚀 Envireport Backend Server running on port ${PORT}`);
+      console.log(`👉 Health check: http://localhost:${PORT}/health`);
+      console.log(`👉 Swagger Docs: http://localhost:${PORT}/api-docs`);
+      console.log(`============================================`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Gagal menginisialisasi Database:", err);
+    process.exit(1); // Matikan server jika DB gagal connect
+  });
 ```
 
 ---
 
-## 🔍 Verification Steps
-1. Make sure your local MySQL is active and listening on port **`3036`**.
-2. Run `npm run dev` to start the server.
-3. Import the updated `sql/schema.sql` into the local MySQL `envireport` database.
-4. Execute a `POST` request to `http://localhost:5000/reports` containing all granular location fields and confirm a `201 Created` status code is returned.
-5. Execute a `GET` request to `http://localhost:5000/reports` and check that the nested `location` object contains the `rt` and `rw` properties.
+## ✅ Expected Result (Hasil yang Diharapkan)
+1. Saat menjalankan `npm run dev`, server harus berhasil terhubung ke MySQL di port `3306`.
+2. Jika database `envireport` belum ada di phpMyAdmin / MySQL, server akan **otomatis membuatnya** tanpa pesan error.
+3. API bisa berjalan dengan normal di Postman tanpa ada error koneksi (terutama saat mencoba endpoint `GET /reports` dan `POST /reports`).
+4. Pastikan user selalu diingatkan untuk mengisi `DB_PASSWORD` sesuai dengan settingan komputer masing-masing.
