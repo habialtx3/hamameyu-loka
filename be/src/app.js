@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const reportRoutes = require('./routes/report.routes');
 const errorHandler = require('./middlewares/error.middleware');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('../docs/swagger.json');
 
 const app = express();
 
@@ -13,6 +15,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Setup Swagger UI Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Register Routes
 // Mount both at root and /api for flexibility

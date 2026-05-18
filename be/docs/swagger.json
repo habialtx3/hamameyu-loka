@@ -1,0 +1,488 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Envireport API",
+    "version": "1.0.0",
+    "description": "Dokumentasi API untuk sistem pelaporan masalah lingkungan tingkat perumahan (RT/RW). Digunakan untuk pelaporan warga dan pemantauan pengurus RT/RW."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/reports": {
+      "get": {
+        "summary": "Mendapatkan semua laporan masalah lingkungan",
+        "description": "Mengambil seluruh daftar laporan warga beserta informasi detail lokasi yang granular dan daftar berkas URL gambar terkait.",
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil seluruh laporan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Reports retrieved successfully."
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Report"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Membuat laporan baru (dengan koordinat & gambar)",
+        "description": "Membuat entri laporan lingkungan baru menggunakan format multipart/form-data. Mendukung pengunggahan hingga 5 gambar sekaligus.",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "Simulasi ID User (Mock Auth). Default bernilai 1 jika dikosongkan.",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Judul laporan masalah lingkungan",
+                    "example": "Saluran drainase mampet"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Penjelasan detail mengenai masalah yang dialami",
+                    "example": "Got depan rumah nomor 12 penuh sampah plastik menyebabkan banjir tipis jika hujan."
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["sampah", "lampu jalan", "jalan rusak", "drainase"],
+                    "description": "Kategori masalah lingkungan",
+                    "example": "drainase"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"],
+                    "description": "Tingkat urgensi laporan",
+                    "example": "medium"
+                  },
+                  "province": {
+                    "type": "string",
+                    "description": "Provinsi lokasi laporan",
+                    "example": "Jawa Barat"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "Kota/Kabupaten lokasi laporan",
+                    "example": "Bandung"
+                  },
+                  "district": {
+                    "type": "string",
+                    "description": "Kecamatan lokasi laporan",
+                    "example": "Coblong"
+                  },
+                  "village": {
+                    "type": "string",
+                    "description": "Kelurahan/Desa lokasi laporan",
+                    "example": "Dago"
+                  },
+                  "rt": {
+                    "type": "string",
+                    "description": "Nomor Rukun Tetangga (RT) dua digit",
+                    "example": "03"
+                  },
+                  "rw": {
+                    "type": "string",
+                    "description": "Nomor Rukun Warga (RW) dua digit",
+                    "example": "05"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Titik koordinat lintang lokasi",
+                    "example": -6.8915
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Titik koordinat bujur lokasi",
+                    "example": 107.6186
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Berkas-berkas foto bukti laporan lapangan (maksimal 5)"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description",
+                  "category",
+                  "province",
+                  "city",
+                  "district",
+                  "village",
+                  "rt",
+                  "rw",
+                  "latitude",
+                  "longitude"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Laporan berhasil dibuat.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Report created successfully."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Report"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Kesalahan parameter input / berkas tidak lengkap.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail satu laporan",
+        "description": "Mencari laporan lingkungan secara spesifik menggunakan ID laporan.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID unik laporan dari database",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil mendapatkan detail laporan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Report detail retrieved successfully."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Report"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Laporan tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/{id}/status": {
+      "patch": {
+        "summary": "Mengubah status laporan (Akses Admin)",
+        "description": "Memperbarui status progress penanganan laporan. Hanya boleh dilakukan oleh Admin RT/RW.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID unik laporan yang akan diubah statusnya",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "processing", "done"],
+                    "description": "Status progres terbaru laporan",
+                    "example": "processing"
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil memperbarui status laporan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Report status updated to processing successfully."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Report"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload tidak valid atau format salah.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Laporan dengan ID tersebut tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "province": {
+            "type": "string",
+            "example": "Jawa Barat"
+          },
+          "city": {
+            "type": "string",
+            "example": "Bandung"
+          },
+          "district": {
+            "type": "string",
+            "example": "Coblong"
+          },
+          "village": {
+            "type": "string",
+            "example": "Dago"
+          },
+          "rt": {
+            "type": "string",
+            "example": "03"
+          },
+          "rw": {
+            "type": "string",
+            "example": "05"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "float",
+            "example": -6.8915
+          },
+          "longitude": {
+            "type": "number",
+            "format": "float",
+            "example": 107.6186
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Saluran drainase mampet"
+          },
+          "description": {
+            "type": "string",
+            "example": "Got depan rumah nomor 12 penuh sampah plastik."
+          },
+          "category": {
+            "type": "string",
+            "example": "drainase"
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "priority": {
+            "type": "string",
+            "example": "medium"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-05-18T04:15:00.348Z"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "/uploads/reports/1715980000000-123456789.jpg"
+            ]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Missing required fields..."
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": null
+          }
+        }
+      }
+    }
+  }
+}
