@@ -1,19 +1,21 @@
 const { getPool, query } = require('../config/db');
 
 /**
- * Service to handle Reports
+ * Service to handle Reports database queries (strictly using raw SQL queries with parameterization)
  */
 class ReportService {
   /**
-   * Create a new report (includes location creation and batch image insertion)
+   * Membuat report baru beserta lokasinya dan banyak foto (One-to-One dengan lokasi, One-to-Many dengan foto)
+   * Menggunakan MySQL Transaction demi konsistensi data.
    */
   async createReport({ userId, title, description, category, priority, location, images }) {
     const pool = getPool();
     const conn = await pool.getConnection();
+    
     try {
       await conn.beginTransaction();
 
-      // 1. Insert Location
+      // 1. Simpan Data Lokasi
       const insertLocationSql = `
         INSERT INTO locations (province, city, district, village, rt, rw, latitude, longitude)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -22,15 +24,15 @@ class ReportService {
         location.province,
         location.city,
         location.district,
-        location.village,
-        location.rt,
-        location.rw,
-        location.latitude,
-        location.longitude
+        location.village || '',
+        location.rt || '',
+        location.rw || '',
+        location.latitude || 0,
+        location.longitude || 0
       ]);
       const locationId = locationResult.insertId;
 
-      // 2. Insert Report
+      // 2. Simpan Data Laporan (default status: pending)
       const insertReportSql = `
         INSERT INTO reports (user_id, title, description, category, priority, location_id, status)
         VALUES (?, ?, ?, ?, ?, ?, 'pending')
@@ -45,7 +47,7 @@ class ReportService {
       ]);
       const reportId = reportResult.insertId;
 
-      // 3. Insert Images (if any)
+      // 3. Simpan Banyak Gambar (jika ada)
       if (images && images.length > 0) {
         const insertImageSql = `
           INSERT INTO report_images (report_id, image_url)
@@ -58,8 +60,8 @@ class ReportService {
 
       await conn.commit();
 
-      // Return the created report detail
-      return this.getReportById(reportId);
+      // Kembalikan detail report yang baru dibuat
+      return await this.getReportById(reportId);
     } catch (error) {
       await conn.rollback();
       throw error;
@@ -69,10 +71,9 @@ class ReportService {
   }
 
   /**
-   * Get all reports, including joined location data and aggregated image URLs
+   * Mengambil semua laporan beserta relasi lokasi dan array gambar (Aggregated)
    */
   async getAllReports() {
-    // We can query reports joined with locations
     const reportsSql = `
       SELECT 
         r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.created_at,
@@ -85,11 +86,11 @@ class ReportService {
 
     if (reports.length === 0) return [];
 
-    // Fetch all images to attach in-memory
+    // Ambil semua gambar sekaligus untuk efisiensi (menghindari N+1 query)
     const imagesSql = `SELECT report_id, image_url FROM report_images`;
     const images = await query(imagesSql);
 
-    // Group images by report_id
+    // Kelompokkan url gambar berdasarkan report_id
     const imagesMap = {};
     images.forEach(img => {
       if (!imagesMap[img.report_id]) {
@@ -98,7 +99,7 @@ class ReportService {
       imagesMap[img.report_id].push(img.image_url);
     });
 
-    // Format the response structure nicely
+    // Format output respons agar rapi
     return reports.map(r => ({
       id: r.id,
       user_id: r.user_id,
@@ -124,7 +125,7 @@ class ReportService {
   }
 
   /**
-   * Get single report by ID, with location and images
+   * Mengambil detail laporan tunggal berdasarkan ID beserta relasi lokasi dan gambarnya
    */
   async getReportById(id) {
     const reportSql = `
@@ -140,7 +141,7 @@ class ReportService {
     if (reports.length === 0) return null;
     const r = reports[0];
 
-    // Fetch images for this report
+    // Ambil gambar untuk laporan ini
     const imagesSql = `SELECT image_url FROM report_images WHERE report_id = ?`;
     const images = await query(imagesSql, [id]);
 
@@ -169,7 +170,7 @@ class ReportService {
   }
 
   /**
-   * Update report status
+   * Memperbarui status laporan (pending, processing, done) oleh admin RT/RW
    */
   async updateReportStatus(id, status) {
     const updateSql = `
@@ -180,7 +181,7 @@ class ReportService {
     const result = await query(updateSql, [status, id]);
     if (result.affectedRows === 0) return null;
 
-    return this.getReportById(id);
+    return await this.getReportById(id);
   }
 }
 

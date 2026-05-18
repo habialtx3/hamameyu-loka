@@ -1,6 +1,8 @@
-USE envireport;
+-- Seed default users for testing
+INSERT INTO users (name, role) 
+SELECT 'Warga Budi', 'resident'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE name = 'Warga Budi');
 
--- Seed Users
-INSERT INTO users (name, role) VALUES 
-('Warga Budi', 'resident'),
-('Pak RT Ahmad', 'admin');
+INSERT INTO users (name, role) 
+SELECT 'Pak RT Ahmad', 'admin'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE name = 'Pak RT Ahmad');

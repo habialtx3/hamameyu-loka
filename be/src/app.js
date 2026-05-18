@@ -11,22 +11,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static uploaded files
+// Serve static uploaded files (uploads/ folder)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Register Routes
-// Mount both at root and /api for flexibility
-app.use('/', reportRoutes);
-app.use('/api', reportRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date() });
+  res.status(200).json({ success: true, status: 'healthy', timestamp: new Date() });
 });
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, status: 'healthy', timestamp: new Date() });
+});
+
+// Register Routes (Mount at /api)
+app.use('/api', reportRoutes);
 
 // 404 Route handler
 app.use((req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
+  const error = new Error(`Route Not Found - ${req.originalUrl}`);
   error.statusCode = 404;
   next(error);
 });
