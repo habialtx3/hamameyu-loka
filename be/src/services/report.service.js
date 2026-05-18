@@ -1,4 +1,4 @@
-const { pool, query } = require('../config/db');
+const { getPool, query } = require('../config/db');
 
 /**
  * Service to handle Reports
@@ -8,6 +8,7 @@ class ReportService {
    * Create a new report (includes location creation and batch image insertion)
    */
   async createReport({ userId, title, description, category, priority, location, images }) {
+    const pool = getPool();
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
