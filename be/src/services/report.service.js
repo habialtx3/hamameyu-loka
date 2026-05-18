@@ -183,6 +183,37 @@ class ReportService {
 
     return await this.getReportById(id);
   }
+
+  /**
+   * Menghapus laporan secara transactional (menghapus gambar & lokasi terkait)
+   */
+  async deleteReport(id) {
+    const report = await this.getReportById(id);
+    if (!report) return false;
+
+    const pool = getPool();
+    const conn = await pool.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      // 1. Hapus report (otomatis cascade menghapus di report_images)
+      const deleteReportSql = `DELETE FROM reports WHERE id = ?`;
+      await conn.execute(deleteReportSql, [id]);
+
+      // 2. Hapus lokasi terkait agar tidak tersisa sebagai yatim (orphaned)
+      const deleteLocationSql = `DELETE FROM locations WHERE id = ?`;
+      await conn.execute(deleteLocationSql, [report.location.id]);
+
+      await conn.commit();
+      return true;
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
 }
 
 module.exports = new ReportService();

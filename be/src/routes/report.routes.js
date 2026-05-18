@@ -72,5 +72,6 @@ router.post('/reports', (req, res, next) => {
 router.get('/reports', reportController.getAllReports);
 router.get('/reports/:id', reportController.getReportById);
 router.patch('/reports/:id/status', reportController.updateReportStatus);
+router.delete('/reports/:id', reportController.deleteReport);
 
 module.exports = router;

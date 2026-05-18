@@ -132,6 +132,24 @@ class ReportController {
       next(error);
     }
   }
+
+  /**
+   * Delete report by ID
+   */
+  async deleteReport(req, res, next) {
+    try {
+      const { id } = req.params;
+      const isDeleted = await reportService.deleteReport(parseInt(id));
+
+      if (!isDeleted) {
+        return sendError(res, `Report with ID ${id} not found.`, 404);
+      }
+
+      return sendSuccess(res, `Report with ID ${id} deleted successfully.`, { id: parseInt(id) });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new ReportController();
