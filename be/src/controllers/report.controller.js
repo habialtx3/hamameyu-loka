@@ -7,11 +7,11 @@ class ReportController {
    */
   async createReport(req, res, next) {
     try {
-      const { title, description, category, priority, province, city, district, village, latitude, longitude } = req.body;
+      const { title, description, category, priority, province, city, district, village, rt, rw, latitude, longitude } = req.body;
 
       // Basic validation
-      if (!title || !description || !category || !province || !city || !district || !latitude || !longitude) {
-        return sendError(res, 'Missing required fields. Ensure title, description, category, and full location coordinates are provided.', 400);
+      if (!title || !description || !category || !province || !city || !district || !village || !rt || !rw || !latitude || !longitude) {
+        return sendError(res, 'Missing required fields. Ensure title, description, category, and full location details (including RT, RW, and village) are provided.', 400);
       }
 
       // Validate category
@@ -43,6 +43,8 @@ class ReportController {
           city,
           district,
           village,
+          rt,
+          rw,
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude)
         },

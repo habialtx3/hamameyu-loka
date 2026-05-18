@@ -14,14 +14,16 @@ class ReportService {
 
       // 1. Insert Location
       const insertLocationSql = `
-        INSERT INTO locations (province, city, district, village, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO locations (province, city, district, village, rt, rw, latitude, longitude)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const [locationResult] = await conn.execute(insertLocationSql, [
         location.province,
         location.city,
         location.district,
-        location.village || null,
+        location.village,
+        location.rt,
+        location.rw,
         location.latitude,
         location.longitude
       ]);
@@ -73,7 +75,7 @@ class ReportService {
     const reportsSql = `
       SELECT 
         r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.created_at,
-        l.id as location_id, l.province, l.city, l.district, l.village, l.latitude, l.longitude
+        l.id as location_id, l.province, l.city, l.district, l.village, l.rt, l.rw, l.latitude, l.longitude
       FROM reports r
       JOIN locations l ON r.location_id = l.id
       ORDER BY r.created_at DESC
@@ -111,6 +113,8 @@ class ReportService {
         city: r.city,
         district: r.district,
         village: r.village,
+        rt: r.rt,
+        rw: r.rw,
         latitude: r.latitude,
         longitude: r.longitude
       },
@@ -125,7 +129,7 @@ class ReportService {
     const reportSql = `
       SELECT 
         r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.created_at,
-        l.id as location_id, l.province, l.city, l.district, l.village, l.latitude, l.longitude
+        l.id as location_id, l.province, l.city, l.district, l.village, l.rt, l.rw, l.latitude, l.longitude
       FROM reports r
       JOIN locations l ON r.location_id = l.id
       WHERE r.id = ?
@@ -154,6 +158,8 @@ class ReportService {
         city: r.city,
         district: r.district,
         village: r.village,
+        rt: r.rt,
+        rw: r.rw,
         latitude: r.latitude,
         longitude: r.longitude
       },
