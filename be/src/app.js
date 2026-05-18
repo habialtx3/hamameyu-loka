@@ -14,6 +14,13 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static uploaded files (uploads/ folder)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Swagger UI configuration
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
+// Sajikan Swagger UI di endpoint /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ success: true, status: 'healthy', timestamp: new Date() });

@@ -376,3 +376,370 @@ No auth endpoints needed for now.
 * created_at
 
 No email/password yet.
+
+---
+
+# 📚 Documentation Plan
+
+Rencana ini dibuat agar tim developer (junior/mid-level) atau AI coding assistant (seperti GPT-3.5, Gemini Flash, atau Claude Haiku) dapat mengimplementasikan dokumentasi API menggunakan Swagger dengan mudah, terstruktur, dan siap pakai.
+
+## 🛠️ Tech Stack & Requirements
+* **`swagger-ui-express`**: Untuk menyediakan UI interaktif Swagger di endpoint `/api-docs`.
+* **`swagger-jsdoc`**: Untuk menulis dokumentasi menggunakan JSDoc comments langsung di atas router/controller, sehingga tidak perlu menulis JSON/YAML besar secara terpisah.
+
+---
+
+## 📋 Langkah-Langkah Implementasi Lengkap
+
+### Langkah 1: Instalasi Dependency
+Jalankan perintah berikut di root folder project `be/`:
+```bash
+npm install swagger-ui-express swagger-jsdoc
+```
+
+---
+
+### Langkah 2: Setup Konfigurasi Swagger
+Buat file helper baru untuk konfigurasi Swagger di `src/config/swagger.js` (opsional namun direkomendasikan agar `app.js` tetap bersih):
+
+#### [NEW] `src/config/swagger.js`
+```javascript
+const swaggerJSDoc = require('swagger-jsdoc');
+
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Envireport API Documentation',
+      version: '1.0.0',
+      description: 'Dokumentasi API untuk sistem pelaporan masalah lingkungan Envireport (Express + Raw Query)',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+        description: 'Development Server',
+      },
+    ],
+    components: {
+      schemas: {
+        // Standard Response Format
+        ApiResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Operation successful' },
+            data: { type: 'object' }
+          }
+        },
+        // Location Schema
+        Location: {
+          type: 'object',
+          required: ['province', 'city', 'district', 'latitude', 'longitude'],
+          properties: {
+            id: { type: 'integer', example: 1 },
+            province: { type: 'string', example: 'Jawa Barat' },
+            city: { type: 'string', example: 'Bandung' },
+            district: { type: 'string', example: 'Coblong' },
+            village: { type: 'string', example: 'Dago' },
+            latitude: { type: 'number', format: 'float', example: -6.89148 },
+            longitude: { type: 'number', format: 'float', example: 107.61633 }
+          }
+        },
+        // Report Schema
+        Report: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            user_id: { type: 'integer', example: 1 },
+            title: { type: 'string', example: 'Jalan Lubang di Dago' },
+            description: { type: 'string', example: 'Ada lubang besar membahayakan pengendara motor.' },
+            category: { type: 'string', enum: ['sampah', 'lampu jalan', 'jalan rusak', 'drainase'], example: 'jalan rusak' },
+            status: { type: 'string', enum: ['pending', 'processing', 'done'], example: 'pending' },
+            priority: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
+            location_id: { type: 'integer', example: 1 },
+            created_at: { type: 'string', format: 'date-time', example: '2026-05-18T07:11:32Z' },
+            location: { $ref: '#/components/schemas/Location' },
+            images: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer', example: 1 },
+                  image_url: { type: 'string', example: '/uploads/reports/file-1715978123.jpg' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  // Lokasi file yang berisi annotation JSDoc
+  apis: ['./src/routes/*.js', './src/controllers/*.js'],
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
+module.exports = swaggerSpec;
+```
+
+---
+
+### Langkah 3: Integrasi ke Express App (`src/app.js` atau `src/server.js`)
+Edit file `src/app.js` untuk mengimpor konfigurasi dan menyajikan Swagger UI pada route `/api-docs`.
+
+Gunakan potongan kode berikut:
+```javascript
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
+// Sajikan Swagger UI di endpoint /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+```
+
+---
+
+### Langkah 4: Menambahkan JSDoc/Swagger Annotation pada Routes
+Buka file router (`src/routes/report.routes.js`) dan tambahkan JSDoc di atas definisi masing-masing route.
+
+#### Contoh Implementasi Annotation & Penjelasan Endpoint:
+
+##### 1. POST `/api/reports` (Create Report)
+```javascript
+/**
+ * @swagger
+ * /api/reports:
+ *   post:
+ *     summary: Membuat laporan masalah lingkungan baru
+ *     description: Endpoint ini membuat laporan baru beserta detail lokasi dan gambar.
+ *     tags: [Reports]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - category
+ *               - priority
+ *               - location
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Jalan Rusak & Berlubang"
+ *               description:
+ *                 type: string
+ *                 example: "Lubang sedalam 15cm di jalan utama perumahan RT 03."
+ *               category:
+ *                 type: string
+ *                 enum: [sampah, lampu jalan, jalan rusak, drainase]
+ *                 example: "jalan rusak"
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *                 example: "high"
+ *               location:
+ *                 type: object
+ *                 required: [province, city, district, latitude, longitude]
+ *                 properties:
+ *                   province:
+ *                     type: string
+ *                     example: "Jawa Barat"
+ *                   city:
+ *                     type: string
+ *                     example: "Bandung"
+ *                   district:
+ *                     type: string
+ *                     example: "Coblong"
+ *                   village:
+ *                     type: string
+ *                     example: "Dago"
+ *                   latitude:
+ *                     type: number
+ *                     example: -6.89148
+ *                   longitude:
+ *                     type: number
+ *                     example: 107.61633
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   description: URL gambar yang sudah diupload
+ *                   example: "/uploads/reports/jalan-rusak.jpg"
+ *     responses:
+ *       201:
+ *         description: Laporan berhasil dibuat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Laporan berhasil dibuat"
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       400:
+ *         description: Request body tidak valid
+ *       500:
+ *         description: Internal server error
+ */
+```
+
+##### 2. GET `/api/reports` (Get All Reports)
+```javascript
+/**
+ * @swagger
+ * /api/reports:
+ *   get:
+ *     summary: Mendapatkan semua daftar laporan
+ *     description: Mengambil seluruh list laporan dari database beserta data lokasi dan gambarnya.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, processing, done]
+ *         description: Filter laporan berdasarkan status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [sampah, lampu jalan, jalan rusak, drainase]
+ *         description: Filter laporan berdasarkan kategori
+ *     responses:
+ *       200:
+ *         description: Berhasil mengambil data laporan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Daftar laporan berhasil dimuat"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Report'
+ *       500:
+ *         description: Internal server error
+ */
+```
+
+##### 3. GET `/api/reports/:id` (Get Report Detail)
+```javascript
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   get:
+ *     summary: Mendapatkan detail laporan berdasarkan ID
+ *     description: Mengambil detail satu laporan secara spesifik beserta data lokasi dan daftar gambar terkait.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Laporan
+ *     responses:
+ *       200:
+ *         description: Detail laporan ditemukan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Detail laporan ditemukan"
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       404:
+ *         description: Laporan tidak ditemukan
+ *       500:
+ *         description: Internal server error
+ */
+```
+
+##### 4. PATCH `/api/reports/:id/status` (Update Status)
+```javascript
+/**
+ * @swagger
+ * /api/reports/{id}/status:
+ *   patch:
+ *     summary: Memperbarui status laporan (Admin RT/RW)
+ *     description: Mengubah status report (pending ke processing, atau processing ke done) oleh pengurus RT/RW.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Laporan
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, processing, done]
+ *                 example: "processing"
+ *     responses:
+ *       200:
+ *         description: Status laporan berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Status laporan berhasil diperbarui menjadi processing"
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       400:
+ *         description: Status tidak valid atau urutan status salah
+ *       404:
+ *         description: Laporan tidak ditemukan
+ *       500:
+ *         description: Internal server error
+ */
+```
+
+---
+
+## 🎯 Panduan untuk Junior/Mid Programmer & AI Model
+Jika Anda (atau AI model) ditugaskan untuk mengimplementasikan rencana ini, ikuti checklist berikut:
+
+1. **Persiapan:** Pastikan database sudah terinstall dan backend server berjalan (`npm run dev` atau `node src/server.js`).
+2. **Setup Boilerplate:** Buat file `src/config/swagger.js` sesuai kode di atas.
+3. **Kaitkan dengan App:** Daftarkan middleware Swagger UI di file `src/app.js` tepat sebelum route utama Anda di-mount.
+4. **Copy-Paste & Sesuaikan:** Salin annotasi JSDoc di atas dan letakkan tepat di atas method handler router Anda pada file `src/routes/report.routes.js` (atau file route/controller terkait).
+5. **Verifikasi:**
+   - Buka browser dan arahkan ke: `http://localhost:3000/api-docs`
+   - Pastikan halaman Swagger UI termuat dengan baik.
+   - Coba jalankan endpoint menggunakan tombol **"Try it out"** langsung di UI Swagger untuk memastikan endpoint berjalan dan menghasilkan response JSON yang sama persis dengan dokumentasi.
+

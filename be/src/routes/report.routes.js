@@ -41,6 +41,104 @@ const upload = multer({
 });
 
 // Definisi Endpoint
+
+/**
+ * @swagger
+ * /api/reports:
+ *   post:
+ *     summary: Membuat laporan masalah lingkungan baru
+ *     description: Endpoint ini membuat laporan baru beserta detail lokasi dan file gambar menggunakan multipart/form-data.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: ID Warga (jika kosong, default ke 1)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - category
+ *               - province
+ *               - city
+ *               - district
+ *               - rt
+ *               - rw
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Jalan Rusak & Berlubang"
+ *               description:
+ *                 type: string
+ *                 example: "Lubang sedalam 15cm di jalan utama perumahan RT 03."
+ *               category:
+ *                 type: string
+ *                 enum: [sampah, lampu jalan, jalan rusak, drainase]
+ *                 example: "jalan rusak"
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *                 example: "high"
+ *               province:
+ *                 type: string
+ *                 example: "Jawa Barat"
+ *               city:
+ *                 type: string
+ *                 example: "Bandung"
+ *               district:
+ *                 type: string
+ *                 example: "Coblong"
+ *               village:
+ *                 type: string
+ *                 example: "Dago"
+ *               rt:
+ *                 type: string
+ *                 example: "03"
+ *               rw:
+ *                 type: string
+ *                 example: "05"
+ *               latitude:
+ *                 type: number
+ *                 format: float
+ *                 example: -6.89148
+ *               longitude:
+ *                 type: number
+ *                 format: float
+ *                 example: 107.61633
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Maksimal 2 file gambar (maks 2MB per file)
+ *     responses:
+ *       201:
+ *         description: Laporan berhasil dibuat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Report created successfully."
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       400:
+ *         description: Request body tidak valid
+ *       500:
+ *         description: Internal server error
+ */
 router.post('/reports', (req, res, next) => {
   // Parsing array gambar dengan nama field 'images' maksimal 2 file
   upload.array('images', 2)(req, res, (err) => {
@@ -69,9 +167,164 @@ router.post('/reports', (req, res, next) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/reports:
+ *   get:
+ *     summary: Mendapatkan semua daftar laporan
+ *     description: Mengambil seluruh list laporan dari database beserta data lokasi dan gambarnya.
+ *     tags: [Reports]
+ *     responses:
+ *       200:
+ *         description: Berhasil mengambil data laporan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Reports retrieved successfully."
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Report'
+ *       500:
+ *         description: Internal server error
+ */
 router.get('/reports', reportController.getAllReports);
+
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   get:
+ *     summary: Mendapatkan detail laporan berdasarkan ID
+ *     description: Mengambil detail satu laporan secara spesifik beserta data lokasi dan daftar gambar terkait.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Laporan
+ *     responses:
+ *       200:
+ *         description: Detail laporan ditemukan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Report detail retrieved successfully."
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       404:
+ *         description: Laporan tidak ditemukan
+ *       500:
+ *         description: Internal server error
+ */
 router.get('/reports/:id', reportController.getReportById);
+
+/**
+ * @swagger
+ * /api/reports/{id}/status:
+ *   patch:
+ *     summary: Memperbarui status laporan (Admin RT/RW)
+ *     description: Mengubah status report (pending ke processing, atau processing ke done) oleh pengurus RT/RW.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Laporan
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, processing, done]
+ *                 example: "processing"
+ *     responses:
+ *       200:
+ *         description: Status laporan berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Report status updated to processing successfully."
+ *                 data:
+ *                   $ref: '#/components/schemas/Report'
+ *       400:
+ *         description: Status tidak valid atau parameter salah
+ *       404:
+ *         description: Laporan tidak ditemukan
+ *       500:
+ *         description: Internal server error
+ */
 router.patch('/reports/:id/status', reportController.updateReportStatus);
+
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   delete:
+ *     summary: Menghapus laporan (dan file gambar terkait) berdasarkan ID
+ *     description: Menghapus laporan spesifik secara permanen beserta data lokasi dan file gambarnya dari disk.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Laporan
+ *     responses:
+ *       200:
+ *         description: Laporan berhasil dihapus
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Report with ID 1 deleted successfully."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *       404:
+ *         description: Laporan tidak ditemukan
+ *       500:
+ *         description: Internal server error
+ */
 router.delete('/reports/:id', reportController.deleteReport);
 
 module.exports = router;
