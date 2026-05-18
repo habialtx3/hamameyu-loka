@@ -21,7 +21,9 @@ CREATE TABLE locations (
   province VARCHAR(100) NOT NULL,
   city VARCHAR(100) NOT NULL,
   district VARCHAR(100) NOT NULL,
-  village VARCHAR(100) NULL,
+  village VARCHAR(100) NOT NULL,
+  rt VARCHAR(10) NOT NULL,
+  rw VARCHAR(10) NOT NULL,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL
 );
