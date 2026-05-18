@@ -1,14 +1,5 @@
-CREATE DATABASE IF NOT EXISTS envireport;
-USE envireport;
-
--- Drop tables if they exist
-DROP TABLE IF EXISTS report_images;
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS locations;
-DROP TABLE IF EXISTS users;
-
 -- 1. Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   role ENUM('resident', 'admin') DEFAULT 'resident',
@@ -16,7 +7,7 @@ CREATE TABLE users (
 );
 
 -- 2. Locations Table
-CREATE TABLE locations (
+CREATE TABLE IF NOT EXISTS locations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   province VARCHAR(100) NOT NULL,
   city VARCHAR(100) NOT NULL,
@@ -29,7 +20,7 @@ CREATE TABLE locations (
 );
 
 -- 3. Reports Table
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
@@ -44,7 +35,7 @@ CREATE TABLE reports (
 );
 
 -- 4. Report Images Table
-CREATE TABLE report_images (
+CREATE TABLE IF NOT EXISTS report_images (
   id INT AUTO_INCREMENT PRIMARY KEY,
   report_id INT NOT NULL,
   image_url VARCHAR(255) NOT NULL,

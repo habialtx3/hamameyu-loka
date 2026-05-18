@@ -8,11 +8,11 @@ const PORT = process.env.PORT || 5000;
 initDB()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`============================================`);
+      console.log(`=================================================`);
       console.log(`🚀 Envireport Backend Server running on port ${PORT}`);
       console.log(`👉 Health check: http://localhost:${PORT}/health`);
-      console.log(`👉 Swagger Docs: http://localhost:${PORT}/api-docs`);
-      console.log(`============================================`);
+      console.log(`👉 API Reports:  http://localhost:${PORT}/api/reports`);
+      console.log(`=================================================`);
     });
   })
   .catch((err) => {

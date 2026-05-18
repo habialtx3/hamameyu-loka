@@ -1,35 +1,51 @@
 const reportService = require('../services/report.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
+/**
+ * Controller to handle Reports HTTP requests
+ */
 class ReportController {
   /**
-   * Create a new report
+   * Create a new report (including location & files)
    */
   async createReport(req, res, next) {
     try {
-      const { title, description, category, priority, province, city, district, village, rt, rw, latitude, longitude } = req.body;
+      const {
+        title,
+        description,
+        category,
+        priority,
+        province,
+        city,
+        district,
+        village,
+        rt,
+        rw,
+        latitude,
+        longitude
+      } = req.body;
 
-      // Basic validation
-      if (!title || !description || !category || !province || !city || !district || !village || !rt || !rw || !latitude || !longitude) {
-        return sendError(res, 'Missing required fields. Ensure title, description, category, and full location details (including RT, RW, and village) are provided.', 400);
+      // 1. Validasi Input Dasar
+      if (!title || !description || !category || !province || !city || !district || !rt || !rw) {
+        return sendError(res, 'Missing required fields. Please provide title, description, category, and complete location data.', 400);
       }
 
-      // Validate category
+      // Validasi Kategori
       const allowedCategories = ['sampah', 'lampu jalan', 'jalan rusak', 'drainase'];
       if (!allowedCategories.includes(category)) {
         return sendError(res, `Invalid category. Must be one of: ${allowedCategories.join(', ')}`, 400);
       }
 
-      // Validate priority if provided
+      // Validasi Prioritas jika ada
       const allowedPriorities = ['low', 'medium', 'high'];
       if (priority && !allowedPriorities.includes(priority)) {
         return sendError(res, `Invalid priority. Must be one of: ${allowedPriorities.join(', ')}`, 400);
       }
 
-      // Mock user context: Read x-user-id from headers, default to 1 (Warga Budi)
+      // User ID Mock: Ambil dari header 'x-user-id', jika tidak ada default ke 1 (Warga Budi)
       const userId = parseInt(req.headers['x-user-id']) || 1;
 
-      // Extract image paths from uploaded files (via Multer)
+      // Ambil path gambar yang di-upload dari Multer
       const images = req.files ? req.files.map(file => `/uploads/reports/${file.filename}`) : [];
 
       const reportData = {
@@ -37,16 +53,16 @@ class ReportController {
         title,
         description,
         category,
-        priority,
+        priority: priority || 'medium',
         location: {
           province,
           city,
           district,
-          village,
+          village: village || '',
           rt,
           rw,
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude)
+          latitude: latitude ? parseFloat(latitude) : 0,
+          longitude: longitude ? parseFloat(longitude) : 0
         },
         images
       };
@@ -89,7 +105,7 @@ class ReportController {
   }
 
   /**
-   * Update report status
+   * Update report status (admin RT/RW only, e.g., pending -> processing -> done)
    */
   async updateReportStatus(req, res, next) {
     try {
@@ -112,6 +128,24 @@ class ReportController {
       }
 
       return sendSuccess(res, `Report status updated to ${status} successfully.`, updatedReport);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete report by ID
+   */
+  async deleteReport(req, res, next) {
+    try {
+      const { id } = req.params;
+      const isDeleted = await reportService.deleteReport(parseInt(id));
+
+      if (!isDeleted) {
+        return sendError(res, `Report with ID ${id} not found.`, 404);
+      }
+
+      return sendSuccess(res, `Report with ID ${id} deleted successfully.`, { id: parseInt(id) });
     } catch (error) {
       next(error);
     }

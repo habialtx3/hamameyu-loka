@@ -1,5 +1,5 @@
 /**
- * Standardized API Response Helper
+ * Standardized API Response Helpers
  */
 const sendSuccess = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json({
