@@ -1,3 +1,8 @@
+DROP TABLE IF EXISTS report_images;
+DROP TABLE IF EXISTS reports;
+DROP TABLE IF EXISTS locations;
+DROP TABLE IF EXISTS users;
+
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -9,12 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
 -- 2. Locations Table
 CREATE TABLE IF NOT EXISTS locations (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  province VARCHAR(100) NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  district VARCHAR(100) NOT NULL,
-  village VARCHAR(100) NOT NULL,
-  rt VARCHAR(10) NOT NULL,
-  rw VARCHAR(10) NOT NULL,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL
 );
@@ -29,7 +28,8 @@ CREATE TABLE IF NOT EXISTS reports (
   status ENUM('pending', 'processing', 'done') DEFAULT 'pending',
   priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
   location_id INT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  time_report TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  time_close TIMESTAMP NULL DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE
 );

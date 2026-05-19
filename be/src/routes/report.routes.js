@@ -66,11 +66,6 @@ const upload = multer({
  *               - title
  *               - description
  *               - category
- *               - province
- *               - city
- *               - district
- *               - rt
- *               - rw
  *             properties:
  *               title:
  *                 type: string
@@ -86,24 +81,6 @@ const upload = multer({
  *                 type: string
  *                 enum: [low, medium, high]
  *                 example: "high"
- *               province:
- *                 type: string
- *                 example: "Jawa Barat"
- *               city:
- *                 type: string
- *                 example: "Bandung"
- *               district:
- *                 type: string
- *                 example: "Coblong"
- *               village:
- *                 type: string
- *                 example: "Dago"
- *               rt:
- *                 type: string
- *                 example: "03"
- *               rw:
- *                 type: string
- *                 example: "05"
  *               latitude:
  *                 type: number
  *                 format: float
@@ -196,6 +173,83 @@ router.post('/reports', (req, res, next) => {
  *         description: Internal server error
  */
 router.get('/reports', reportController.getAllReports);
+
+/**
+ * @swagger
+ * /api/reports/history:
+ *   get:
+ *     summary: Mengambil daftar report historis sebagai kandidat pembanding
+ *     description: Mengambil list report historis berdasarkan kategori dan start_time batas bawah.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Kategori laporan
+ *       - in: query
+ *         name: start_time
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Batas waktu pencarian awal (ISO 8601)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: Maksimal jumlah laporan yang dikembalikan
+ *     responses:
+ *       200:
+ *         description: Daftar riwayat laporan berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Daftar riwayat laporan berhasil diambil"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     report_count:
+ *                       type: integer
+ *                       example: 2
+ *                     reports:
+ *                       type: object
+ *                       additionalProperties:
+ *                         type: object
+ *                         properties:
+ *                           time_report:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2026-05-18T14:00:00+07:00"
+ *                           location:
+ *                             type: object
+ *                             properties:
+ *                               latitude:
+ *                                 type: number
+ *                                 example: -6.2088
+ *                               longitude:
+ *                                 type: number
+ *                                 example: 106.8456
+ *                           time_close:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                             example: "2026-05-19T14:00:00+07:00"
+ *       400:
+ *         description: Kategori atau start_time kosong / tidak valid
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/reports/history', reportController.getReportsHistory);
 
 /**
  * @swagger
@@ -312,7 +366,7 @@ router.patch('/reports/:id/status', reportController.updateReportStatus);
  *                   type: boolean
  *                   example: true
  *                 message:
- *                   type: string
+ *                   type:   string
  *                   example: "Report with ID 1 deleted successfully."
  *                 data:
  *                   type: object
