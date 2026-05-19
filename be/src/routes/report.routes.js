@@ -75,8 +75,8 @@ const upload = multer({
  *                 example: "Lubang sedalam 15cm di jalan utama perumahan RT 03."
  *               category:
  *                 type: string
- *                 enum: [sampah, lampu jalan, jalan rusak, drainase]
- *                 example: "jalan rusak"
+ *                 enum: [WASTE, SIGNS_AND_MARKINGS, PUBLIC_FACILITIES, ROAD_AND_SIDEWALK, TREES_AND_GREEN_SPACE]
+ *                 example: "ROAD_AND_SIDEWALK"
  *               priority:
  *                 type: string
  *                 enum: [low, medium, high]
@@ -187,6 +187,7 @@ router.get('/reports', reportController.getAllReports);
  *         required: true
  *         schema:
  *           type: string
+ *           enum: [WASTE, SIGNS_AND_MARKINGS, PUBLIC_FACILITIES, ROAD_AND_SIDEWALK, TREES_AND_GREEN_SPACE]
  *         description: Kategori laporan
  *       - in: query
  *         name: start_time

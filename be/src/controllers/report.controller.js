@@ -25,7 +25,7 @@ class ReportController {
       }
 
       // Validasi Kategori
-      const allowedCategories = ['sampah', 'lampu jalan', 'jalan rusak', 'drainase'];
+      const allowedCategories = ['WASTE', 'SIGNS_AND_MARKINGS', 'PUBLIC_FACILITIES', 'ROAD_AND_SIDEWALK', 'TREES_AND_GREEN_SPACE'];
       if (!allowedCategories.includes(category)) {
         return sendError(res, `Invalid category. Must be one of: ${allowedCategories.join(', ')}`, 400);
       }

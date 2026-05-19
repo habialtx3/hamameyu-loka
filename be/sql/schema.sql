@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS reports (
   user_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  category ENUM('sampah', 'lampu jalan', 'jalan rusak', 'drainase') NOT NULL,
+  category ENUM('WASTE', 'SIGNS_AND_MARKINGS', 'PUBLIC_FACILITIES', 'ROAD_AND_SIDEWALK', 'TREES_AND_GREEN_SPACE') NOT NULL,
   status ENUM('pending', 'processing', 'done') DEFAULT 'pending',
   priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
   location_id INT NOT NULL,

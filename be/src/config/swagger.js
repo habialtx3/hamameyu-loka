@@ -43,7 +43,7 @@ const options = {
             user_id: { type: 'integer', example: 1 },
             title: { type: 'string', example: 'Jalan Lubang di Dago' },
             description: { type: 'string', example: 'Ada lubang besar membahayakan pengendara motor.' },
-            category: { type: 'string', enum: ['sampah', 'lampu jalan', 'jalan rusak', 'drainase'], example: 'jalan rusak' },
+            category: { type: 'string', enum: ['WASTE', 'SIGNS_AND_MARKINGS', 'PUBLIC_FACILITIES', 'ROAD_AND_SIDEWALK', 'TREES_AND_GREEN_SPACE'], example: 'ROAD_AND_SIDEWALK' },
             status: { type: 'string', enum: ['pending', 'processing', 'done'], example: 'pending' },
             priority: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
             location_id: { type: 'integer', example: 1 },

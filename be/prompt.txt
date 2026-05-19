@@ -1,0 +1,8 @@
+ternyata ada sebuah refactor bahwa category report itu hanya :
+WASTE
+SIGNS_AND_MARKINGS
+PUBLIC_FACILITIES
+ROAD_AND_SIDEWALK
+TREES_AND_GREEN_SPACE
+
+buatkan update issue md agar memecahkan persoalan ini dan pastikan agar dibuat langkah-langkah implementasi nya agar bisa dikerjakan oleh junior/mid developer atau ai model yang murah
