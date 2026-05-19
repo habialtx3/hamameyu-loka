@@ -81,15 +81,12 @@ Setiap report memiliki 1 location (one-to-one relationship).
 * status
 * priority
 * location_id (FK)
-* created_at
+* time_report
+* time_close
 
 ## locations
 
 * id
-* province
-* city
-* district
-* village
 * latitude
 * longitude
 
@@ -121,6 +118,7 @@ Setiap report memiliki 1 location (one-to-one relationship).
 
 * POST /reports → create report (include location + images)
 * GET /reports → list reports
+* GET /reports/history → mengambil daftar report historis
 * GET /reports/:id → detail report
 * PATCH /reports/:id/status → update status (admin)
 
@@ -359,6 +357,7 @@ Authentication will be implemented later.
 
 * POST /api/reports
 * GET /api/reports
+* GET /api/reports/history
 * GET /api/reports/:id
 * PATCH /api/reports/:id/status
 
@@ -434,13 +433,9 @@ const options = {
         // Location Schema
         Location: {
           type: 'object',
-          required: ['province', 'city', 'district', 'latitude', 'longitude'],
+          required: ['latitude', 'longitude'],
           properties: {
             id: { type: 'integer', example: 1 },
-            province: { type: 'string', example: 'Jawa Barat' },
-            city: { type: 'string', example: 'Bandung' },
-            district: { type: 'string', example: 'Coblong' },
-            village: { type: 'string', example: 'Dago' },
             latitude: { type: 'number', format: 'float', example: -6.89148 },
             longitude: { type: 'number', format: 'float', example: 107.61633 }
           }
@@ -457,7 +452,8 @@ const options = {
             status: { type: 'string', enum: ['pending', 'processing', 'done'], example: 'pending' },
             priority: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
             location_id: { type: 'integer', example: 1 },
-            created_at: { type: 'string', format: 'date-time', example: '2026-05-18T07:11:32Z' },
+            time_report: { type: 'string', format: 'date-time', example: '2026-05-18T07:11:32Z' },
+            time_close: { type: 'string', format: 'date-time', example: '2026-05-19T14:00:00Z', nullable: true },
             location: { $ref: '#/components/schemas/Location' },
             images: {
               type: 'array',
@@ -542,20 +538,8 @@ Buka file router (`src/routes/report.routes.js`) dan tambahkan JSDoc di atas def
  *                 example: "high"
  *               location:
  *                 type: object
- *                 required: [province, city, district, latitude, longitude]
+ *                 required: [latitude, longitude]
  *                 properties:
- *                   province:
- *                     type: string
- *                     example: "Jawa Barat"
- *                   city:
- *                     type: string
- *                     example: "Bandung"
- *                   district:
- *                     type: string
- *                     example: "Coblong"
- *                   village:
- *                     type: string
- *                     example: "Dago"
  *                   latitude:
  *                     type: number
  *                     example: -6.89148
@@ -742,4 +726,74 @@ Jika Anda (atau AI model) ditugaskan untuk mengimplementasikan rencana ini, ikut
    - Buka browser dan arahkan ke: `http://localhost:3000/api-docs`
    - Pastikan halaman Swagger UI termuat dengan baik.
    - Coba jalankan endpoint menggunakan tombol **"Try it out"** langsung di UI Swagger untuk memastikan endpoint berjalan dan menghasilkan response JSON yang sama persis dengan dokumentasi.
+
+---
+
+# 🆕 Update: Penyesuaian Skema Laporan & History API
+
+Terdapat perubahan besar pada struktur database dan penambahan fitur baru (Historical API). Berikut adalah langkah-langkah implementasinya yang disiapkan untuk dikerjakan oleh Junior/Mid Developer atau AI Model:
+
+## 1. Migrasi Skema Database
+
+- **Tabel `locations`**: Hapus semua kolom teks wilayah geografis (`province`, `city`, `district`, `village`). Tabel ini sekarang HANYA berisi:
+  - `id` (Primary Key)
+  - `latitude` (Float/Decimal)
+  - `longitude` (Float/Decimal)
+- **Tabel `reports`**: 
+  - Hapus kolom `created_at`.
+  - Tambahkan kolom `time_report` (DATETIME / TIMESTAMP) - mencatat kapan laporan dibuat.
+  - Tambahkan kolom `time_close` (DATETIME / TIMESTAMP, Boleh NULL) - mencatat kapan status laporan berubah menjadi *done*, *rejected*, dsb.
+
+**Tugas AI/Developer:** Perbarui file `sql/schema.sql` untuk merepresentasikan perubahan tabel `locations` dan `reports` ini.
+
+## 2. Pembuatan Endpoint: GET `/api/reports/history`
+
+Buat API endpoint baru di `src/routes/report.routes.js` dan controllernya di `src/controllers/report.controller.js` serta logic database di `src/services/report.service.js`.
+
+### Spesifikasi API History
+- **Method:** GET
+- **Path:** `/api/reports/history`
+- **Tujuan:** Mengambil daftar report historis sebagai kandidat pembanding.
+- **Query Parameters:**
+  - `category` (String, Wajib): Kategori laporan yang dicari.
+  - `start_time` (String, Wajib): Waktu batas bawah pencarian, format ISO 8601 (contoh: `2026-05-19T10:00:00+07:00`).
+  - `limit` (Integer, Optional): Batas jumlah data yang dikembalikan. Default: `100`.
+
+### Format Respon yang Diharapkan
+Pastikan response di-mapping persis seperti ini (menggunakan dictionary/object dengan key format `REP-{id}`):
+```json
+{
+  "success": true,
+  "message": "Daftar riwayat laporan berhasil diambil",
+  "data": {
+    "report_count": 2,
+    "reports": {
+      "REP-1001": {
+        "time_report": "2026-05-18T14:00:00+07:00",
+        "location": {
+          "latitude": -6.2088,
+          "longitude": 106.8456
+        },
+        "time_close": "2026-05-19T14:00:00+07:00"
+      },
+      "REP-1002": {
+        "time_report": "2026-05-19T13:45:00+07:00",
+        "location": {
+          "latitude": -6.20885,
+          "longitude": 106.8456
+        },
+        "time_close": null
+      }
+    }
+  }
+}
+```
+
+### Langkah Implementasi untuk Developer/AI:
+1. **Tambahkan Validasi Query Parameter:** Di dalam `report.controller.js`, pastikan ada pengecekan parameter `category` dan `start_time`. Jika tidak ada, kembalikan response error `400 Bad Request`.
+2. **Raw SQL Query:** Di `report.service.js`, buat query SQL dengan `WHERE category = ? AND time_report >= ? LIMIT ?`. Ingat, gabungkan data dengan tabel `locations` menggunakan `JOIN`.
+3. **Format Data Transform:** Looping hasil dari query database untuk membentuk object response di atas. ID laporan dari database (`1001`) diubah menjadi string key `"REP-1001"`.
+4. **Tambahkan Swagger Docs:** Tambahkan JSDoc Swagger comment di atas endpoint GET `/api/reports/history` dengan parameter query yang sesuai dan response schema sesuai dengan format baru ini.
+
+Silakan jadikan langkah-langkah di atas sebagai blueprint atau prompt lanjutan (sub-task) kepada AI / Developer!
 

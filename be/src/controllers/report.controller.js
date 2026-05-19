@@ -15,19 +15,13 @@ class ReportController {
         description,
         category,
         priority,
-        province,
-        city,
-        district,
-        village,
-        rt,
-        rw,
         latitude,
         longitude
       } = req.body;
 
       // 1. Validasi Input Dasar
-      if (!title || !description || !category || !province || !city || !district || !rt || !rw) {
-        return sendError(res, 'Missing required fields. Please provide title, description, category, and complete location data.', 400);
+      if (!title || !description || !category) {
+        return sendError(res, 'Missing required fields. Please provide title, description, and category.', 400);
       }
 
       // Validasi Kategori
@@ -55,12 +49,6 @@ class ReportController {
         category,
         priority: priority || 'medium',
         location: {
-          province,
-          city,
-          district,
-          village: village || '',
-          rt,
-          rw,
           latitude: latitude ? parseFloat(latitude) : 0,
           longitude: longitude ? parseFloat(longitude) : 0
         },
@@ -146,6 +134,46 @@ class ReportController {
       }
 
       return sendSuccess(res, `Report with ID ${id} deleted successfully.`, { id: parseInt(id) });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get historical reports mapping to a dictionary structure
+   */
+  async getReportsHistory(req, res, next) {
+    try {
+      const { category, start_time, limit } = req.query;
+
+      if (!category || !start_time) {
+        return sendError(res, 'Missing required query parameters: category and start_time are mandatory.', 400);
+      }
+
+      const limitParsed = limit ? parseInt(limit) : 100;
+
+      const historyData = await reportService.getReportsHistory({
+        category,
+        startTime: start_time,
+        limit: limitParsed
+      });
+
+      // Transform array into dict format: REP-{id}
+      const reportsMap = {};
+      historyData.forEach(item => {
+        reportsMap[`REP-${item.id}`] = {
+          time_report: item.time_report,
+          location: item.location,
+          time_close: item.time_close
+        };
+      });
+
+      const responseData = {
+        report_count: historyData.length,
+        reports: reportsMap
+      };
+
+      return sendSuccess(res, 'Daftar riwayat laporan berhasil diambil', responseData);
     } catch (error) {
       next(error);
     }

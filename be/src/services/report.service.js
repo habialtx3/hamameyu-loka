@@ -17,16 +17,10 @@ class ReportService {
 
       // 1. Simpan Data Lokasi
       const insertLocationSql = `
-        INSERT INTO locations (province, city, district, village, rt, rw, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO locations (latitude, longitude)
+        VALUES (?, ?)
       `;
       const [locationResult] = await conn.execute(insertLocationSql, [
-        location.province,
-        location.city,
-        location.district,
-        location.village || '',
-        location.rt || '',
-        location.rw || '',
         location.latitude || 0,
         location.longitude || 0
       ]);
@@ -76,11 +70,11 @@ class ReportService {
   async getAllReports() {
     const reportsSql = `
       SELECT 
-        r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.created_at,
-        l.id as location_id, l.province, l.city, l.district, l.village, l.rt, l.rw, l.latitude, l.longitude
+        r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.time_report, r.time_close,
+        l.id as location_id, l.latitude, l.longitude
       FROM reports r
       JOIN locations l ON r.location_id = l.id
-      ORDER BY r.created_at DESC
+      ORDER BY r.time_report DESC
     `;
     const reports = await query(reportsSql);
 
@@ -108,15 +102,10 @@ class ReportService {
       category: r.category,
       status: r.status,
       priority: r.priority,
-      created_at: r.created_at,
+      time_report: r.time_report,
+      time_close: r.time_close,
       location: {
         id: r.location_id,
-        province: r.province,
-        city: r.city,
-        district: r.district,
-        village: r.village,
-        rt: r.rt,
-        rw: r.rw,
         latitude: r.latitude,
         longitude: r.longitude
       },
@@ -130,8 +119,8 @@ class ReportService {
   async getReportById(id) {
     const reportSql = `
       SELECT 
-        r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.created_at,
-        l.id as location_id, l.province, l.city, l.district, l.village, l.rt, l.rw, l.latitude, l.longitude
+        r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.time_report, r.time_close,
+        l.id as location_id, l.latitude, l.longitude
       FROM reports r
       JOIN locations l ON r.location_id = l.id
       WHERE r.id = ?
@@ -153,15 +142,10 @@ class ReportService {
       category: r.category,
       status: r.status,
       priority: r.priority,
-      created_at: r.created_at,
+      time_report: r.time_report,
+      time_close: r.time_close,
       location: {
         id: r.location_id,
-        province: r.province,
-        city: r.city,
-        district: r.district,
-        village: r.village,
-        rt: r.rt,
-        rw: r.rw,
         latitude: r.latitude,
         longitude: r.longitude
       },
@@ -171,14 +155,15 @@ class ReportService {
 
   /**
    * Memperbarui status laporan (pending, processing, done) oleh admin RT/RW
+   * Serta memperbarui time_close jika status diubah ke 'done' (atau NULL jika selain itu)
    */
   async updateReportStatus(id, status) {
     const updateSql = `
       UPDATE reports 
-      SET status = ?
+      SET status = ?, time_close = IF(? = 'done', CURRENT_TIMESTAMP, NULL)
       WHERE id = ?
     `;
-    const result = await query(updateSql, [status, id]);
+    const result = await query(updateSql, [status, status, id]);
     if (result.affectedRows === 0) return null;
 
     return await this.getReportById(id);
@@ -213,6 +198,33 @@ class ReportService {
     } finally {
       conn.release();
     }
+  }
+
+  /**
+   * Mengambil daftar report historis berdasarkan kategori dan start_time
+   */
+  async getReportsHistory({ category, startTime, limit = 100 }) {
+    const historySql = `
+      SELECT 
+        r.id, r.time_report, r.time_close,
+        l.latitude, l.longitude
+      FROM reports r
+      JOIN locations l ON r.location_id = l.id
+      WHERE r.category = ? AND r.time_report >= ?
+      ORDER BY r.time_report DESC
+      LIMIT ?
+    `;
+    const reports = await query(historySql, [category, startTime, limit]);
+
+    return reports.map(r => ({
+      id: r.id,
+      time_report: r.time_report,
+      time_close: r.time_close,
+      location: {
+        latitude: r.latitude,
+        longitude: r.longitude
+      }
+    }));
   }
 }
 

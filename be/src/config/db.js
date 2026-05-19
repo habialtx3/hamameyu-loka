@@ -75,7 +75,7 @@ async function initDB() {
 
 const query = async (sql, params) => {
   if (!pool) throw new Error("Database pool is not initialized! (pool is null)");
-  const [results] = await pool.execute(sql, params);
+  const [results] = await pool.query(sql, params);
   return results;
 };
 

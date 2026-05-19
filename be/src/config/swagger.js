@@ -28,15 +28,9 @@ const options = {
         // Location Schema
         Location: {
           type: 'object',
-          required: ['province', 'city', 'district', 'rt', 'rw', 'latitude', 'longitude'],
+          required: ['latitude', 'longitude'],
           properties: {
             id: { type: 'integer', example: 1 },
-            province: { type: 'string', example: 'Jawa Barat' },
-            city: { type: 'string', example: 'Bandung' },
-            district: { type: 'string', example: 'Coblong' },
-            village: { type: 'string', example: 'Dago' },
-            rt: { type: 'string', example: '03' },
-            rw: { type: 'string', example: '05' },
             latitude: { type: 'number', format: 'float', example: -6.89148 },
             longitude: { type: 'number', format: 'float', example: 107.61633 }
           }
@@ -53,7 +47,8 @@ const options = {
             status: { type: 'string', enum: ['pending', 'processing', 'done'], example: 'pending' },
             priority: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
             location_id: { type: 'integer', example: 1 },
-            created_at: { type: 'string', format: 'date-time', example: '2026-05-18T07:11:32Z' },
+            time_report: { type: 'string', format: 'date-time', example: '2026-05-18T07:11:32Z' },
+            time_close: { type: 'string', format: 'date-time', example: '2026-05-19T14:00:00Z', nullable: true },
             location: { $ref: '#/components/schemas/Location' },
             images: {
               type: 'array',
