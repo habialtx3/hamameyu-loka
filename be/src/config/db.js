@@ -13,7 +13,7 @@ async function initDB() {
   const database = process.env.DB_NAME || 'envireport';
 
   console.log(`⏳ Connecting to MySQL server at ${host}:${port}...`);
-  
+
   // 1. Buat koneksi sementara tanpa nama database untuk memastikan DB ada
   const tempConn = await mysql.createConnection({
     host,
@@ -21,42 +21,46 @@ async function initDB() {
     user,
     password
   });
-  
+
   // 2. Buat database jika belum ada
   await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
   await tempConn.end();
 
-  // 3. Gunakan koneksi sementara dengan multipleStatements: true untuk inisialisasi schema dan seed
-  const setupConn = await mysql.createConnection({
-    host,
-    port,
-    user,
-    password,
-    database,
-    multipleStatements: true
-  });
+  if (process.env.DB_INIT === 'true') {
+    // 3. Gunakan koneksi sementara dengan multipleStatements: true untuk inisialisasi schema dan seed
+    const setupConn = await mysql.createConnection({
+      host,
+      port,
+      user,
+      password,
+      database,
+      multipleStatements: true
+    });
 
-  // Eksekusi schema.sql
-  try {
-    const schemaPath = path.join(__dirname, '../../sql/schema.sql');
-    const schemaSql = await fs.readFile(schemaPath, 'utf8');
-    await setupConn.query(schemaSql);
-    console.log(`✅ Schema initialized successfully.`);
-  } catch (error) {
-    console.error(`⚠️ Schema initialization error:`, error.message);
+    // Eksekusi schema.sql
+    try {
+      const schemaPath = path.join(__dirname, '../../sql/schema.sql');
+      const schemaSql = await fs.readFile(schemaPath, 'utf8');
+      await setupConn.query(schemaSql);
+      console.log(`✅ Schema initialized successfully.`);
+    } catch (error) {
+      console.error(`⚠️ Schema initialization error:`, error.message);
+    }
+
+    // Eksekusi seed.sql
+    try {
+      const seedPath = path.join(__dirname, '../../sql/seed.sql');
+      const seedSql = await fs.readFile(seedPath, 'utf8');
+      await setupConn.query(seedSql);
+      console.log(`✅ Seed data initialized successfully.`);
+    } catch (error) {
+      console.error(`⚠️ Seed data initialization error:`, error.message);
+    }
+
+    await setupConn.end();
   }
 
-  // Eksekusi seed.sql
-  try {
-    const seedPath = path.join(__dirname, '../../sql/seed.sql');
-    const seedSql = await fs.readFile(seedPath, 'utf8');
-    await setupConn.query(seedSql);
-    console.log(`✅ Seed data initialized successfully.`);
-  } catch (error) {
-    console.error(`⚠️ Seed data initialization error:`, error.message);
-  }
 
-  await setupConn.end();
 
   // 4. Inisialisasi pool utama tanpa multipleStatements demi keamanan dari SQL Injection
   pool = mysql.createPool({
