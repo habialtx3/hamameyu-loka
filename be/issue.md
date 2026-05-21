@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Refaktor Kategori Laporan (Enum Category Update)
 
 ## Deskripsi Masalah
@@ -41,3 +42,28 @@ Karena dokumentasi API kita berbasis JSDoc (di router dan config), Anda harus me
 ---
 
 **Mohon pastikan seluruh checklist di atas diselesaikan dengan cermat dan divalidasi sebelum mengajukan Pull Request (PR)!**
+=======
+# Task: Update README.md to Match Recent Changes
+
+## Description
+Perbarui file `readme.md` agar mencerminkan perubahan dan update terbaru pada sistem. Penyesuaian ini sangat penting agar dokumentasi selaras dengan source code backend saat ini.
+
+Fokus pembaruan terutama pada bagian:
+1. **Reports**
+   - Penambahan kolom `time_report` dan `time_close` pada skema database.
+   - Penghapusan kolom `created_at` (jika ada di dokumentasi sebelumnya).
+   - Pembaruan endpoint dan format response (termasuk API historis laporan).
+
+2. **Report Images**
+   - Penjelasan relasi antara tabel `reports` dan `report_images`.
+   - Update bagaimana gambar ditangani dalam laporan.
+
+3. **Locations**
+   - Pembaruan skema `locations` yang sekarang *hanya* menyimpan koordinat (latitude dan longitude), tanpa data string wilayah seperti provinsi atau kota.
+
+## Checklist
+- [ ] Sesuaikan deskripsi tabel `reports` dengan skema terbaru.
+- [ ] Sesuaikan deskripsi tabel `locations` dengan skema terbaru.
+- [ ] Jelaskan mekanisme handling `report images`.
+- [ ] Validasi daftar endpoint API agar akurat.
+>>>>>>> Stashed changes

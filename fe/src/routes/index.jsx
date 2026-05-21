@@ -2,12 +2,14 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "../pages/user/home";
 import ReportPage from "../pages/user/reports";
 import AdminDashboardPage from "../pages/admin/dashboard";
+import AdminDashboardPageCoba from "../pages/admin/dashboard/indexCoba"; //ini dashboard admin tryyyyyyyyyy
 import ReportDetailPage from "../pages/user/report_detail";
 import ReportSubmissionPage from "../pages/user/report_submission";
 import LoginPage from "../pages/user/login";
 import RegisterPage from "../pages/user/register";
 import UserDashboardPage from "../pages/user/dashboard";
 import MapReportPage from "../pages/user/map_report";
+import FAQPage from "../pages/user/faq";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: "/admin/dashboard",
     element: <AdminDashboardPage />,
+  },
+    {
+    path: "/admin/dashboardCoba",
+    element: <AdminDashboardPageCoba />,
   },
   {
     path: "/reports/add",
@@ -45,6 +51,10 @@ const router = createBrowserRouter([
   {
     path: "/map-report",
     element: <MapReportPage />,
+  },
+  {
+    path: "/FAQ",
+    element: <FAQPage />,
   },
 ]);
 
