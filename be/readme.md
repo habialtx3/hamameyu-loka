@@ -34,16 +34,10 @@ Tabel untuk menyimpan data warga atau pengurus RT/RW.
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Waktu Pendaftaran |
 
 ### 2. `locations`
-Tabel untuk menyimpan data lokasi pelaporan secara granular.
+Tabel untuk menyimpan koordinat lokasi pelaporan.
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `INT` | `PRIMARY KEY`, `AUTO_INCREMENT` | ID Lokasi |
-| `province` | `VARCHAR(100)` | `NOT NULL` | Provinsi |
-| `city` | `VARCHAR(100)` | `NOT NULL` | Kabupaten / Kota |
-| `district` | `VARCHAR(100)` | `NOT NULL` | Kecamatan |
-| `village` | `VARCHAR(100)` | `NOT NULL` | Kelurahan / Desa |
-| `rt` | `VARCHAR(10)` | `NOT NULL` | Rukun Tetangga (RT) |
-| `rw` | `VARCHAR(10)` | `NOT NULL` | Rukun Warga (RW) |
 | `latitude` | `DECIMAL(10, 8)` | `NOT NULL` | Garis Lintang Koordinat |
 | `longitude` | `DECIMAL(11, 8)` | `NOT NULL` | Garis Bujur Koordinat |
 
@@ -59,7 +53,8 @@ Tabel utama untuk data laporan masalah lingkungan.
 | `status` | `ENUM` | `pending`, `processing`, `done` | Status Penanganan |
 | `priority` | `ENUM` | `low`, `medium`, `high` | Skala Prioritas |
 | `location_id` | `INT` | `FOREIGN KEY` (references `locations.id`) | Relasi Lokasi |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Waktu Pembuatan |
+| `time_report` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Waktu Pembuatan Laporan |
+| `time_close` | `TIMESTAMP` | `NULL` | Waktu Penutupan/Selesai |
 
 ### 4. `report_images`
 Tabel pendukung untuk menyimpan lampiran berkas foto laporan.
@@ -145,12 +140,6 @@ Membuat laporan baru lengkap dengan data lokasi granular dan maksimal 2 lampiran
   - `description`: `Tumpukan sampah basah di depan pos satpam belum diangkut 3 hari.`
   - `category`: `sampah` (harus salah satu: `sampah`, `lampu jalan`, `jalan rusak`, `drainase`)
   - `priority`: `high` (opsional: `low`, `medium`, `high`, default: `medium`)
-  - `province`: `Jawa Barat`
-  - `city`: `Bandung`
-  - `district`: `Coblong`
-  - `village`: `Dago` (opsional)
-  - `rt`: `03`
-  - `rw`: `05`
   - `latitude`: `-6.8915`
   - `longitude`: `107.6186`
   - `images`: *[Upload File Gambar]* (maksimal 2 file, masing-masing maks 2MB)
@@ -162,14 +151,11 @@ curl -X POST http://localhost:5000/api/reports \
   -F "description=Tumpukan sampah basah belum diangkut" \
   -F "category=sampah" \
   -F "priority=high" \
-  -F "province=Jawa Barat" \
-  -F "city=Bandung" \
-  -F "district=Coblong" \
-  -F "rt=03" \
-  -F "rw=05" \
+  -F "latitude=-6.8915" \
+  -F "longitude=107.6186" \
   -F "images=@/path/to/foto1.png" \
   -F "images=@/path/to/foto2.png"
-```
+``` 
 - **Response Contoh (201 Created)**:
 ```json
 {
@@ -183,15 +169,10 @@ curl -X POST http://localhost:5000/api/reports \
     "category": "sampah",
     "status": "pending",
     "priority": "high",
-    "created_at": "2026-05-18T06:50:30.000Z",
+    "time_report": "2026-05-18T06:50:30.000Z",
+    "time_close": null,
     "location": {
       "id": 1,
-      "province": "Jawa Barat",
-      "city": "Bandung",
-      "district": "Coblong",
-      "village": "Dago",
-      "rt": "03",
-      "rw": "05",
       "latitude": "-6.89150000",
       "longitude": "107.61860000"
     },
@@ -227,15 +208,10 @@ curl -X GET http://localhost:5000/api/reports
       "category": "sampah",
       "status": "pending",
       "priority": "high",
-      "created_at": "2026-05-18T06:50:30.000Z",
+      "time_report": "2026-05-18T06:50:30.000Z",
+    "time_close": null,
       "location": {
         "id": 1,
-        "province": "Jawa Barat",
-        "city": "Bandung",
-        "district": "Coblong",
-        "village": "Dago",
-        "rt": "03",
-        "rw": "05",
         "latitude": "-6.89150000",
         "longitude": "107.61860000"
       },
@@ -271,15 +247,10 @@ curl -X GET http://localhost:5000/api/reports/1
     "category": "sampah",
     "status": "pending",
     "priority": "high",
-    "created_at": "2026-05-18T06:50:30.000Z",
+    "time_report": "2026-05-18T06:50:30.000Z",
+    "time_close": null,
     "location": {
       "id": 1,
-      "province": "Jawa Barat",
-      "city": "Bandung",
-      "district": "Coblong",
-      "village": "Dago",
-      "rt": "03",
-      "rw": "05",
       "latitude": "-6.89150000",
       "longitude": "107.61860000"
     },
@@ -320,15 +291,10 @@ curl -X PATCH http://localhost:5000/api/reports/1/status \
     "category": "sampah",
     "status": "processing",
     "priority": "high",
-    "created_at": "2026-05-18T06:50:30.000Z",
+    "time_report": "2026-05-18T06:50:30.000Z",
+    "time_close": null,
     "location": {
       "id": 1,
-      "province": "Jawa Barat",
-      "city": "Bandung",
-      "district": "Coblong",
-      "village": "Dago",
-      "rt": "03",
-      "rw": "05",
       "latitude": "-6.89150000",
       "longitude": "107.61860000"
     },
@@ -357,6 +323,41 @@ curl -X DELETE http://localhost:5000/api/reports/1
   "message": "Report with ID 1 deleted successfully.",
   "data": {
     "id": 1
+  }
+}
+```
+
+---
+
+### 7. Get Historical Reports (Ambil Riwayat Laporan)
+Mengambil daftar report historis sebagai kandidat pembanding.
+- **Method**: `GET`
+- **URL**: `/api/reports/history`
+- **Query Parameters**:
+  - `category` (Wajib): Kategori laporan yang dicari
+  - `start_time` (Wajib): Waktu batas bawah pencarian (ISO 8601)
+  - `limit` (Opsional): Batas jumlah data (default: 100)
+- **Sample Curl**:
+```bash
+curl -X GET "http://localhost:5000/api/reports/history?category=sampah&start_time=2026-05-18T10:00:00Z&limit=10"
+```
+- **Response Contoh (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Daftar riwayat laporan berhasil diambil",
+  "data": {
+    "report_count": 1,
+    "reports": {
+      "REP-1": {
+        "time_report": "2026-05-18T14:00:00+07:00",
+        "location": {
+          "latitude": -6.8915,
+          "longitude": 107.6186
+        },
+        "time_close": "2026-05-19T14:00:00+07:00"
+      }
+    }
   }
 }
 ```
