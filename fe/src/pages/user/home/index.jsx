@@ -19,7 +19,7 @@ export default function Home() {
               z-0 
               opacity-90
               
-              top-[58%] 
+              top-[70%] 
               w-[190%]
 
               sm:top-[55%] 
@@ -42,7 +42,7 @@ export default function Home() {
           </div>
 
           {/* Content */}
-          <div className="relative z-10">
+          <div className="relative z-10 lg:mt-5 mb-10">
             
             <span className="text-xs font-bold tracking-widest text-gray-600 uppercase mb-4">
               Lapor Lebih Mudah, Kota Lebih Bersih.
@@ -63,7 +63,7 @@ export default function Home() {
             </p>
 
             <Link to={"/reports/add"}>
-              <button className="w-full sm:w-auto bg-[#51a750] text-white font-semibold px-8 py-3 rounded-full hover:bg-green-700 transition shadow-lg hover:shadow-xl">
+              <button className="w-full sm:w-auto bg-[#51a750] text-white font-semibold px-8 py-3 rounded-full hover:bg-green-700 transition shadow-lg hover:shadow-xl lg:mb-40">
                 Buat Laporan Sekarang
               </button>
             </Link>
@@ -96,7 +96,7 @@ export default function Home() {
           
           <div className="border border-gray-200 rounded-3xl p-6 hover:shadow-lg transition bg-white flex flex-col items-center text-center">
             <img
-              src="/assets/illust/fitur01.png"
+              src="/assets/illust/fitur02.png"
               alt="Lapor Semudah Update Status"
               className="w-full h-40 sm:h-48 object-contain mb-6"
             />
