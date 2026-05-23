@@ -1,478 +1,277 @@
 import { useState } from "react";
-import DatePicker from "react-datepicker";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+// Import React Leaflet & Leaflet Core untuk penentuan lokasi granular
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Import aset gambar marker default agar tidak pecah/hilang saat di-render
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function ReportSubmissionPage() {
-  const { register, handleSubmit, setValue } = useForm();
+  const { register, handleSubmit, setValue, watch } = useForm({
+    defaultValues: {
+      priority: "medium", // Default fallback sesuai skema database
+      category: "",
+    }
+  });
 
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedDate, setSelectedDate] = useState(null);
+  // Ambil state untuk preview nama file gambar yang diunggah
+  const watchedImages = watch("images");
+
+  const [mapCoords, setMapCoords] = useState({
+    lat: 1.1278, // Titik default awal: Batam Centre
+    lng: 104.0526,
+  });
 
   const location = useLocation();
   const navigate = useNavigate();
 
   const CATEGORY_OPTIONS = [
-    {
-      value: "WASTE",
-      label: "Sampah",
-      description: "Limbah, tumpukan sampah, kebersihan",
-      icon: "🗑️",
-    },
-    {
-      value: "SIGNS_AND_MARKINGS",
-      label: "Rambu & Marka",
-      description: "Rambu jalan, marka jalan rusak",
-      icon: "🚧",
-    },
-    {
-      value: "PUBLIC_FACILITIES",
-      label: "Fasilitas Umum",
-      description: "Lampu jalan, taman, halte",
-      icon: "🏢",
-    },
-    {
-      value: "ROAD_AND_SIDEWALK",
-      label: "Jalan & Trotoar",
-      description: "Jalan berlubang, trotoar rusak",
-      icon: "🛣️",
-    },
-    {
-      value: "TREES_AND_GREEN_SPACE",
-      label: "Ruang Hijau",
-      description: "Pohon tumbang, taman rusak",
-      icon: "🌳",
-    },
+    { value: "WASTE", label: "Sampah", icon: "🗑️" },
+    { value: "SIGNS_AND_MARKINGS", label: "Rambu & Markah Jalan", icon: "🚧" },
+    { value: "PUBLIC_FACILITIES", label: "Fasilitas Publik", icon: "🏢" },
+    { value: "ROAD_AND_SIDEWALK", label: "Jalan & Trotoar Rusak", icon: "🛣️" },
+    { value: "TREES_AND_GREEN_SPACE", label: "Pohon & Ruang Hijau", icon: "🌳" },
   ];
 
   const backPath = location.state?.from || "/";
 
-  // const onSubmit = (data) => {
-  //   console.log(data);
-  // };
+  // Komponen pembantu internal Leaflet untuk menangkap aksi klik user di atas peta
+  const LocationMarker = () => {
+    useMapEvents({
+      click(e) {
+        setMapCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
+      },
+    });
+    return <Marker position={[mapCoords.lat, mapCoords.lng]} />;
+  };
 
   const onSubmit = async (data) => {
-  const formData = new FormData();
-
-  formData.append("title", data.title);
-
-  formData.append("description", data.detail);
-
-  // ENUM VALID
-  formData.append("category", data.category);
-
-  formData.append("latitude", "-6.2088");
-  formData.append("longitude", "106.8456");
-
-  if (data.image?.length > 0) {
-    const maxFiles = Math.min(data.image.length, 2);
-
-    for (let i = 0; i < maxFiles; i++) {
-      formData.append("images", data.image[i]);
+    // Validasi dasar agar user memilih kategori
+    if (!data.category) {
+      alert("Silakan pilih kategori laporan terlebih dahulu.");
+      return;
     }
-  }
 
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/reports",
-      {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("description", data.description); // Menyesuaikan parameter api backend
+    formData.append("category", data.category);
+    formData.append("priority", data.priority);
+    
+    // Kirim koordinat dinamis hasil klik user pada peta Leaflet
+    formData.append("latitude", mapCoords.lat.toFixed(6));
+    formData.append("longitude", mapCoords.lng.toFixed(6));
+
+    // Validasi berkas lampiran gambar (Maksimal 2 file gambar @2MB)
+    if (data.images && data.images.length > 0) {
+      const maxFiles = Math.min(data.images.length, 2);
+      for (let i = 0; i < maxFiles; i++) {
+        formData.append("images", data.images[i]);
+      }
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/api/reports", {
         method: "POST",
         headers: {
-          "x-user-id": "1",
+          "x-user-id": "1", // Mock User ID
         },
         body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert("Laporan Anda berhasil dikirim ke sistem aduan warga.");
+        navigate(backPath);
+      } else {
+        alert(result.message || "Gagal mengirimkan laporan.");
       }
-    );
-
-    const result = await response.json();
-
-    if (result.success) {
-      alert("Laporan berhasil dikirim");
-      navigate(backPath);
-    } else {
-      alert(result.message);
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan koneksi server.");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Server error");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fafafa] text-gray-800">
       {/* HEADER */}
-      <header className="border-b border-gray-200 bg-white px-4 sm:px-6 md:px-8 py-4 sm:py-5 flex items-center text-gray-600 shrink-0">
+      <header className="border-b border-gray-200 bg-white px-4 sm:px-6 md:px-8 py-4 flex items-center text-gray-600 shrink-0">
         <button
           onClick={() => navigate(backPath)}
-          className="flex items-center hover:text-black transition font-medium text-sm sm:text-base"
+          className="flex items-center hover:text-black transition font-medium text-sm"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back
+          Kembali
         </button>
       </header>
 
-      {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-5 sm:py-6">
+      {/* CONTENT FORM */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-6">
         <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-6 lg:gap-8">
-          {/* LEFT FORM */}
+          
+          {/* SISI KIRI: FORM DATA */}
           <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-5 sm:space-y-6"
-            >
-              {/* TITLE */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              
+              {/* JUDUL */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">
-                  Title
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Judul Laporan
                 </label>
-
                 <input
-  {...register("title")}
-  type="text"
-  placeholder="Contoh: Jalan Rusak di RT 03"
-  className="
-    w-full
-    rounded-2xl
-    border
-    border-gray-200
-    bg-white
-    px-4
-    py-3
-    text-sm
-    outline-none
-    transition-all
-    focus:border-black
-    focus:ring-4
-    focus:ring-gray-100
-  "
-/>
+                  {...register("title", { required: true })}
+                  type="text"
+                  placeholder="Contoh: Tumpukan Sampah di Depan Gerbang Kompleks"
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-black focus:ring-4 focus:ring-gray-100"
+                />
               </div>
 
-              {/* DETAIL */}
+              {/* DESKRIPSI (DESCRIPTION) */}
               <div>
-                <label
-                  htmlFor="detail"
-                  className="block text-xs font-medium text-gray-600 mb-2"
-                >
-                  Detail
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Deskripsi / Detail Kejadian
                 </label>
-
-                <div className="border border-gray-300 rounded-md overflow-hidden">
-                  {/* TEXTAREA */}
-                  <textarea
-  {...register("detail")}
-  rows="7"
-  placeholder="Jelaskan detail masalah yang terjadi..."
-  className="
-    w-full
-    rounded-2xl
-    border
-    border-gray-200
-    bg-white
-    px-4
-    py-3
-    text-sm
-    resize-none
-    outline-none
-    transition-all
-    focus:border-black
-    focus:ring-4
-    focus:ring-gray-100
-  "
-/>
-
-                  {/* TOOLBAR */}
-                  <div className="bg-[#fcfcfc] px-3 sm:px-4 py-2 flex items-center flex-wrap gap-3 sm:gap-4 text-gray-500">
-                    <button
-                      type="button"
-                      className="font-bold hover:text-black"
-                    >
-                      B
-                    </button>
-
-                    <button type="button" className="italic hover:text-black">
-                      I
-                    </button>
-
-                    <button
-                      type="button"
-                      className="line-through hover:text-black"
-                    >
-                      S
-                    </button>
-
-                    <div className="w-[1px] h-4 bg-gray-300"></div>
-
-                    <button type="button" className="hover:text-black">
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
-                      </svg>
-                    </button>
-
-                    <button type="button" className="hover:text-black">
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z" />
-                      </svg>
-                    </button>
-
-                    <div className="w-[1px] h-4 bg-gray-300"></div>
-
-                    <button
-                      type="button"
-                      className="text-xl leading-none font-serif hover:text-black"
-                    >
-                      "
-                    </button>
-
-                    <button
-                      type="button"
-                      className="font-mono hover:text-black"
-                    >
-                      {"</>"}
-                    </button>
-                  </div>
-                </div>
+                <textarea
+                  {...register("description", { required: true })}
+                  rows="6"
+                  placeholder="Jelaskan detail masalah, contoh: Sampah basah dari pedagang pasar malam belum diangkut selama 3 hari berturut-turut hingga menimbulkan bau menyengat..."
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm resize-none outline-none transition-all focus:border-black focus:ring-4 focus:ring-gray-100"
+                />
               </div>
 
-              {/* DROPDOWN + DATE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 relative">
-                {/* DROPDOWN */}
+              {/* GROUP SELECT: PRIORITAS & KATEGORI */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                
+                {/* TINGKAT PRIORITAS (ENUM VALID) */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                    Priority Level
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Tingkat Prioritas
                   </label>
-
-                  <div className="relative">
-                    <div
-                      onClick={() => setTypeOpen(!typeOpen)}
-                      className="w-full border border-gray-300 rounded-md px-4 py-3 flex justify-between items-center cursor-pointer text-sm"
-                    >
-                      <span>{selectedType || "Select Type"}</span>
-
-                      <span>⌄</span>
-                    </div>
-
-                    {typeOpen && (
-                      <div className="absolute w-full bg-white border border-gray-200 shadow-lg rounded-md z-10 mt-1 overflow-hidden">
-                        {[
-                          "Waste Issue",
-                          "Facility Damage",
-                          "Illegal Dumping",
-                        ].map((item) => (
-                          <div
-                            key={item}
-                            onClick={() => {
-                              setSelectedType(item);
-                              setValue("type", item);
-                              setTypeOpen(false);
-                            }}
-                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm"
-                          >
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    {...register("priority")}
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition-all focus:border-black focus:ring-4 focus:ring-gray-100"
+                  >
+                    <option value="low">Rendah (Low)</option>
+                    <option value="medium">Sedang (Medium)</option>
+                    <option value="high">Tinggi / Mendesak (High)</option>
+                  </select>
                 </div>
 
-                {/* DROPDOWN KATEGORI */}
+                {/* KATEGORI LAPORAN (ENUM VALID) */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                    Kategori Masalah
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Kategori Aduan Masalah
                   </label>
-
-                  {/* CATEGORY */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kategori Laporan
-                    </label>
-
-                    <select
-                      {...register("category")}
-                      className="
-      w-full
-      rounded-2xl
-      border
-      border-gray-200
-      bg-white
-      px-4
-      py-3
-      text-sm
-      text-gray-800
-      outline-none
-      transition-all
-      focus:border-black
-      focus:ring-4
-      focus:ring-gray-100
-    "
-                      defaultValue=""
-                    >
-                      <option value="" disabled>
-                        Pilih kategori laporan
+                  <select
+                    {...register("category", { required: true })}
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition-all focus:border-black focus:ring-4 focus:ring-gray-100"
+                  >
+                    <option value="" disabled>Pilih kategori laporan</option>
+                    {CATEGORY_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.icon} {item.label}
                       </option>
-
-                      {CATEGORY_OPTIONS.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.icon} {item.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <p className="text-xs text-gray-400 mt-2">
-                      Pilih kategori yang paling sesuai dengan masalah yang
-                      dilaporkan.
-                    </p>
-                  </div>
-                </div>
-
-                {/* DATE */}
-                <div className="relative">
-                  <div className="bg-gray-400 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
-                    <p className="text-white text-sm font-medium mb-4">
-                      Select date
-                    </p>
-
-                    <DatePicker
-                      selected={selectedDate}
-                      onChange={(date) => {
-                        setSelectedDate(date);
-                        setValue("date", date);
-                      }}
-                      className="w-full border px-4 py-3 mb-3 rounded-md text-sm"
-                    />
-
-                    <div className="flex justify-end gap-4 text-white text-sm">
-                      <button type="button">Cancel</button>
-
-                      <button type="submit">OK</button>
-                    </div>
-                  </div>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* SUBMIT */}
-              <div className="pt-4 sm:pt-6">
+              {/* BUTTON SUBMIT */}
+              <div className="pt-4">
                 <button
-  type="submit"
-  className="
-    w-full
-    rounded-2xl
-    bg-black
-    text-white
-    py-4
-    font-medium
-    hover:opacity-90
-    transition-all
-  "
->
-  Kirim Laporan
-</button>
+                  type="submit"
+                  className="w-full rounded-2xl bg-black text-white py-4 font-semibold hover:opacity-90 transition-all shadow-sm"
+                >
+                  Kirim Laporan Resmi Warga
+                </button>
               </div>
             </form>
           </div>
 
-          {/* RIGHT SIDE */}
-          <div className="w-full xl:w-80 grid grid-cols-2 xl:grid-cols-1 gap-4 sm:gap-6">
-            {/* UPLOAD */}
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-black mb-3">
-                Foto Bukti
-              </h3>
+          {/* SISI KANAN: MEDIA BUKTI & TITIK KOORDINAT GEOSPASIAL */}
+          <div className="w-full xl:w-96 flex flex-col gap-6">
+            
+            {/* FILE IMAGE UPLOAD */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-black mb-3">Foto Lampiran Bukti (Maks 2)</h3>
 
-              <div className="
-  relative
-  border-2
-  border-dashed
-  border-gray-200
-  hover:border-black
-  transition-all
-  rounded-3xl
-  bg-gray-50
-  p-8
-  flex
-  flex-col
-  items-center
-  justify-center
-  text-center
-">
-                {/* ICON */}
-                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#a0abb8] rounded-xl mb-3 sm:mb-4 flex items-end justify-center overflow-hidden">
-                  <svg
-                    className="w-10 h-8 sm:w-16 sm:h-12 text-white/50"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M19 3H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2zM5 19V5h14l.002 14H5z" />
-                    <path d="m10 14-1-1-3 4h12l-5-7z" />
+              <div className="relative border-2 border-dashed border-gray-200 hover:border-black transition-all rounded-2xl bg-gray-50 p-6 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-gray-200 rounded-xl mb-3 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
 
-                {/* TEXT */}
-                <div className="flex flex-col items-center text-gray-500 text-xs sm:text-sm">
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 mb-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-
-                  <span className="text-center">
-                    Upload / Drop
-                    <br />
-                    image
-                  </span>
+                <div className="text-gray-500 text-xs">
+                  <p className="font-medium">Klik untuk pilih gambar</p>
+                  <p className="text-[10px] mt-1 text-gray-400">Format JPEG/PNG hingga 2 file (Maks 2MB/file)</p>
                 </div>
 
-                {/* INPUT */}
                 <input
                   type="file"
+                  multiple
                   accept="image/*"
-                  {...register("image")}
+                  {...register("images")}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
               </div>
+
+              {/* List Nama Gambar Terpilih */}
+              {watchedImages && watchedImages.length > 0 && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-[11px] font-bold text-gray-500 mb-1">File Terpilih:</p>
+                  <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                    {Array.from(watchedImages).slice(0, 2).map((file, idx) => (
+                      <li key={idx} className="truncate">{file.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
-            {/* MAP */}
-            <div>
-              <h3 className="text-sm sm:text-base font-bold mb-3">Lokasi</h3>
+            {/* LEAFLET GEOLOCATION PICKER */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <div className="mb-2">
+                <h3 className="text-sm font-bold text-black">Tandai Lokasi Masalah</h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">Geser atau klik peta tepat pada posisi kejadian.</p>
+              </div>
 
-              <div className="w-full aspect-[1/1] sm:aspect-square rounded-xl overflow-hidden border">
-                <iframe
-                  src="https://maps.google.com/maps?q=Batam%20Centre&t=&z=14&output=embed"
-                  className="w-full h-full border-0"
-                />
+              <div className="w-full aspect-square rounded-2xl overflow-hidden border border-gray-200 relative z-10">
+                <MapContainer
+                  center={[mapCoords.lat, mapCoords.lng]}
+                  zoom={14}
+                  className="w-full h-full"
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <LocationMarker />
+                </MapContainer>
+              </div>
+
+              {/* Log Informasi Koordinat Aktual */}
+              <div className="mt-3 flex gap-2 text-[11px] font-mono text-gray-500 justify-between bg-gray-50 p-2 rounded-lg border">
+                <span>Lat: {mapCoords.lat.toFixed(5)}</span>
+                <span>Lng: {mapCoords.lng.toFixed(5)}</span>
               </div>
             </div>
+
           </div>
         </div>
       </div>

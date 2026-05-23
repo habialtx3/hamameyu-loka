@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { reportService } from "../../../services/api";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/sidebar";
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState([]);
@@ -124,6 +125,7 @@ export default function AdminReportsPage() {
   return (
     <div className="bg-[#f6faf7] min-h-screen lg:flex">
       {/* SIDEBAR (Jika ada komponen sidebar, tempatkan di sini) */}
+       <Sidebar />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto">

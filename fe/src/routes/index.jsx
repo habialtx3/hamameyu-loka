@@ -27,11 +27,11 @@ const router = createBrowserRouter([
     element: <ReportDetailPage />,
   },
   {
-    path: "/admin/dashboard",
+    path: "/admin/dashboard/asli",
     element: <AdminDashboardPage />,
   },
     {
-    path: "/admin/dashboardCoba",
+    path: "/admin/dashboard",
     element: <AdminDashboardPageCoba />,
   },
   {

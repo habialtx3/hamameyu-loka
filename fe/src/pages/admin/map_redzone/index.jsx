@@ -3,12 +3,13 @@ import { reportService } from "../../../services/api";
 
 // 1. WAJIB IMPORT KELOMPOK UTAMA DARI REACT-LEAFLET & LEAFLET MURNI
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet"; 
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // Import aset gambar penanda (marker) default Leaflet
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import Sidebar from "../components/sidebar";
 
 // Fix bug ikon Leaflet default yang sering hilang/error saat di-build oleh Vite/Webpack
 let DefaultIcon = L.icon({
@@ -32,17 +33,17 @@ export default function AdminRedzonePage() {
   const batamCenterCoordinates = [1.1278, 104.0526];
 
   const areaCoordinates = {
-    "Bengkong": [1.1414, 104.0284],
+    Bengkong: [1.1414, 104.0284],
     "Batam Centre": [1.1278, 104.0526],
-    "Sekupang": [1.1224, 103.9482],
-    "Tiban": [1.1112, 103.9712],
+    Sekupang: [1.1224, 103.9482],
+    Tiban: [1.1112, 103.9712],
     "Batu Ampar": [1.1512, 104.0012],
-    "Nongsa": [1.1611, 104.1012],
+    Nongsa: [1.1611, 104.1012],
   };
 
   // --- 1. UTILITY: MEMETAKAN KOORDINAT API KE WILAYAH BATAM ---
   const getAreaFromCoordinates = (lat, lng) => {
-    if (!lat || !lng) return "Batam Centre"; 
+    if (!lat || !lng) return "Batam Centre";
 
     const latitude = parseFloat(lat);
     const longitude = parseFloat(lng);
@@ -186,7 +187,8 @@ export default function AdminRedzonePage() {
   return (
     <div className="bg-[#f6faf7] min-h-screen lg:flex">
       {/* SIDEBAR */}
-
+      <Sidebar />
+      
       {/* MAIN */}
       <main className="flex-1 overflow-y-auto">
         {/* TOPBAR */}
@@ -196,7 +198,8 @@ export default function AdminRedzonePage() {
               Peta Redzone
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Pantau area dengan tingkat laporan tertinggi di Kota Batam secara real-time.
+              Pantau area dengan tingkat laporan tertinggi di Kota Batam secara
+              real-time.
             </p>
           </div>
 
@@ -255,19 +258,23 @@ export default function AdminRedzonePage() {
                   Peta Distribusi Redzone Interaktif
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Klik titik marker untuk melihat statistik masalah dominan di wilayah tersebut.
+                  Klik titik marker untuk melihat statistik masalah dominan di
+                  wilayah tersebut.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-xs">
                 <div className="flex items-center gap-2 text-black">
-                  <div className="w-3 h-3 rounded-full bg-red-500" /> High (&gt;10 Laporan)
+                  <div className="w-3 h-3 rounded-full bg-red-500" /> High
+                  (&gt;10 Laporan)
                 </div>
                 <div className="flex items-center gap-2 text-black">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" /> Medium (5-10 Laporan)
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" /> Medium
+                  (5-10 Laporan)
                 </div>
                 <div className="flex items-center gap-2 text-black">
-                  <div className="w-3 h-3 rounded-full bg-green-500" /> Low (&lt;5 Laporan)
+                  <div className="w-3 h-3 rounded-full bg-green-500" /> Low
+                  (&lt;5 Laporan)
                 </div>
               </div>
             </div>
@@ -285,30 +292,42 @@ export default function AdminRedzonePage() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {!loading && !error && redzones.map((zone, idx) => {
-                  const coords = areaCoordinates[zone.area] || batamCenterCoordinates;
+                {!loading &&
+                  !error &&
+                  redzones.map((zone, idx) => {
+                    const coords =
+                      areaCoordinates[zone.area] || batamCenterCoordinates;
 
-                  return (
-                    <Marker key={idx} position={coords}>
-                      <Popup>
-                        <div className="p-1 font-sans text-black">
-                          <h4 className="font-bold text-sm border-b pb-1 mb-1">
-                            {zone.area}
-                          </h4>
-                          <p className="text-xs text-gray-600 m-0">
-                            Tingkat Risiko: <span className="font-semibold">{zone.level}</span>
-                          </p>
-                          <p className="text-xs text-gray-600 m-0">
-                            Total Laporan: <span className="font-semibold text-green-600">{zone.reports}</span>
-                          </p>
-                          <p className="text-xs text-gray-600 m-0">
-                            Masalah Utama: <span className="font-semibold text-red-500">{zone.issue}</span>
-                          </p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
+                    return (
+                      <Marker key={idx} position={coords}>
+                        <Popup>
+                          <div className="p-1 font-sans text-black">
+                            <h4 className="font-bold text-sm border-b pb-1 mb-1">
+                              {zone.area}
+                            </h4>
+                            <p className="text-xs text-gray-600 m-0">
+                              Tingkat Risiko:{" "}
+                              <span className="font-semibold">
+                                {zone.level}
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-600 m-0">
+                              Total Laporan:{" "}
+                              <span className="font-semibold text-green-600">
+                                {zone.reports}
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-600 m-0">
+                              Masalah Utama:{" "}
+                              <span className="font-semibold text-red-500">
+                                {zone.issue}
+                              </span>
+                            </p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
               </MapContainer>
             </div>
           </div>
@@ -344,8 +363,14 @@ export default function AdminRedzonePage() {
                       </p>
                     </div>
 
-                    <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getLevelStyle(item.level)}`}>
-                      {item.level === "High" ? "Risiko Tinggi" : item.level === "Medium" ? "Risiko Sedang" : "Risiko Rendah"}
+                    <span
+                      className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getLevelStyle(item.level)}`}
+                    >
+                      {item.level === "High"
+                        ? "Risiko Tinggi"
+                        : item.level === "Medium"
+                          ? "Risiko Sedang"
+                          : "Risiko Rendah"}
                     </span>
                   </div>
 
@@ -374,7 +399,8 @@ export default function AdminRedzonePage() {
                   Detail Area Redzone
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Statistik akumulasi laporan aktif berdasarkan wilayah administratif terdekat.
+                  Statistik akumulasi laporan aktif berdasarkan wilayah
+                  administratif terdekat.
                 </p>
               </div>
 
@@ -401,8 +427,14 @@ export default function AdminRedzonePage() {
                         </td>
 
                         <td>
-                          <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getLevelStyle(item.level)}`}>
-                            {item.level === "High" ? "Risiko Tinggi" : item.level === "Medium" ? "Risiko Sedang" : "Risiko Rendah"}
+                          <span
+                            className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getLevelStyle(item.level)}`}
+                          >
+                            {item.level === "High"
+                              ? "Risiko Tinggi"
+                              : item.level === "Medium"
+                                ? "Risiko Sedang"
+                                : "Risiko Rendah"}
                           </span>
                         </td>
 
