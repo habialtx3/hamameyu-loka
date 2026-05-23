@@ -216,7 +216,7 @@ export default function AdminDashboardPageCoba() {
               </Link>
 
               <Link
-                to="/admin/redzone"
+                to="/admin/map_redzone"
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-[#f5faf6] transition"
               >
                 <span>🗺</span>
