@@ -10,6 +10,8 @@ import RegisterPage from "../pages/user/register";
 import UserDashboardPage from "../pages/user/dashboard";
 import MapReportPage from "../pages/user/map_report";
 import FAQPage from "../pages/user/faq";
+import AdminReportsPage from "../pages/admin/reports";
+import AdminRedzonePage from "../pages/admin/map_redzone";
 
 const router = createBrowserRouter([
   {
@@ -25,12 +27,20 @@ const router = createBrowserRouter([
     element: <ReportDetailPage />,
   },
   {
-    path: "/admin/dashboard",
+    path: "/admin/dashboard/asli",
     element: <AdminDashboardPage />,
   },
     {
-    path: "/admin/dashboardCoba",
+    path: "/admin/dashboard",
     element: <AdminDashboardPageCoba />,
+  },
+  {
+    path: "/admin/reports",
+    element: <AdminReportsPage />,
+  },
+  {
+    path: "/admin/map_redzone",
+    element: <AdminRedzonePage />,
   },
   {
     path: "/reports/add",
