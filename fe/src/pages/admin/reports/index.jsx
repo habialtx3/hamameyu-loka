@@ -125,7 +125,7 @@ export default function AdminReportsPage() {
   return (
     <div className="bg-[#f6faf7] min-h-screen lg:flex">
       {/* SIDEBAR (Jika ada komponen sidebar, tempatkan di sini) */}
-       <Sidebar />
+      <Sidebar />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto">
@@ -312,13 +312,13 @@ export default function AdminReportsPage() {
                 ))}
               </div>
             )}
-
             {/* TAMPILAN TABLE DESKTOP (Hidden on Mobile) */}
             {!loading && !error && filteredReports.length > 0 && (
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full min-w-[1000px]">
                   <thead>
-                    <tr className="text-left text-sm text-gray-400 border-b border-gray-100">
+                    {/* Mengubah text-left menjadi text-center di tr head */}
+                    <tr className="text-center text-sm text-gray-400 border-b border-gray-100">
                       <th className="pb-4 font-medium">ID</th>
                       <th className="pb-4 font-medium">Laporan</th>
                       <th className="pb-4 font-medium">Lokasi (Lat, Long)</th>
@@ -326,7 +326,7 @@ export default function AdminReportsPage() {
                       <th className="pb-4 font-medium">Pelapor</th>
                       <th className="pb-4 font-medium">Tanggal</th>
                       <th className="pb-4 font-medium">Status</th>
-                      <th className="pb-4 font-medium text-center">Aksi</th>
+                      <th className="pb-4 font-medium">Aksi</th>
                     </tr>
                   </thead>
 
@@ -334,15 +334,16 @@ export default function AdminReportsPage() {
                     {filteredReports.map((item, index) => (
                       <tr
                         key={item.id || index}
-                        className="border-b border-gray-50 hover:bg-[#f8fcf8] transition"
+                        className="border-b border-gray-50 hover:bg-[#f8fcf8] transition text-center" // Menambah text-center di sini agar default cell menjadi tengah
                       >
                         <td className="py-5 text-sm text-gray-500 font-medium">
                           #{item.id}
                         </td>
 
                         <td className="py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-[#eef9f0] flex items-center justify-center text-lg">
+                          {/* Menambahkan justify-center agar card info laporan bergeser ke tengah */}
+                          <div className="flex items-center justify-center gap-3 text-left">
+                            <div className="w-11 h-11 rounded-2xl bg-[#eef9f0] flex items-center justify-center text-lg shrink-0">
                               📍
                             </div>
                             <div>
@@ -363,7 +364,7 @@ export default function AdminReportsPage() {
                         </td>
 
                         <td>
-                          <span className="bg-[#eef9f0] text-[#51a750] text-xs px-3 py-1 rounded-full font-medium">
+                          <span className="bg-[#eef9f0] text-[#51a750] text-xs px-3 py-1 rounded-full font-medium inline-block">
                             {getCategoryLabel(item.category)}
                           </span>
                         </td>
@@ -378,22 +379,23 @@ export default function AdminReportsPage() {
 
                         <td>
                           <span
-                            className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getStatusStyle(item.status)}`}
+                            className={`text-xs px-3 py-1.5 rounded-full font-semibold inline-block ${getStatusStyle(item.status)}`}
                           >
                             {getStatusLabel(item.status)}
                           </span>
                         </td>
 
                         <td>
+                          {/* Memastikan pembungkus tombol aksi berada tepat di tengah */}
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => navigate(`/reports/${item.id}`)}
-                              className="flex not-last:text-center px-4 py-3 rounded-full text-sm bg-[#eef9f0] text-[#51a750] font-semibold transition hover:opacity-80"
+                              className="px-4 py-3 rounded-full text-sm bg-[#eef9f0] text-[#51a750] font-semibold transition hover:opacity-80"
                             >
                               Detail
                             </button>
 
-                            <button className="flex px-4 py-3 rounded-full text-sm bg-[#f5f5f5] text-gray-600 font-semibold transition hover:opacity-80">
+                            <button className="px-4 py-3 rounded-full text-sm bg-[#f5f5f5] text-gray-600 font-semibold transition hover:opacity-80">
                               Edit
                             </button>
                           </div>

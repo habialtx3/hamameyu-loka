@@ -51,7 +51,7 @@ export default function Sidebar() {
               Management
             </p>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-[#f5faf6] transition text-left">
                 <span>👥</span>
                 Kelola Warga
@@ -61,7 +61,7 @@ export default function Sidebar() {
                 <span>🤖</span>
                 Pengaturan AI
               </button>
-            </div>
+            </div> */}
           </div>
         </nav>
       </aside>

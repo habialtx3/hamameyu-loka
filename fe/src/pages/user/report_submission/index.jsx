@@ -195,7 +195,7 @@ export default function ReportSubmissionPage() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full rounded-2xl bg-black text-white py-4 font-semibold hover:opacity-90 transition-all shadow-sm"
+                  className="w-full rounded-2xl bg-[#51a750] text-[#eef9f0] py-4 font-semibold hover:opacity-90 transition-all shadow-sm"
                 >
                   Kirim Laporan Resmi Warga
                 </button>

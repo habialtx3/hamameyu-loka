@@ -4,6 +4,10 @@ import { reportService } from "../../../services/api";
 import {
   Bar,
   BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -384,72 +388,98 @@ export default function AdminDashboardPageCoba() {
                 ))}
               </div>
             </div> */}
-            <div className="grid gap-6 mb-6">
-              {/* 1. Chart Batang: Kategori Laporan */}
+          </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 lg:col-span-2 flex flex-col min-h-[350px]">
-                <h2 className="text-sm font-bold mb-4">
-                  Jumlah Laporan berdasarkan Jenis Kategori
-                </h2>
-                <div className="flex-1 w-full h-full min-h-[250px]">
-                  {/* 1. Bungkus dengan ResponsiveContainer agar width otomatis 100% */}
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={barChartData}
-                      /* Mengatur margin kiri-kanan ke 0 agar grafik benar-benar mepet ke tepi slot */
-                      margin={{ top: 10, right: 0, left: -20, bottom: 10 }}
-                      /* 2. Mengatur jarak antar kategori/hari menjadi sangat kecil (persentase) 
-       Semakin kecil angkanya (misal "10%" atau "5%"), batang akan semakin tebal ke samping */
-                      barCategoryGap="15%"
-                    >
-                      <defs>
-                        <linearGradient
-                          id="colorGreenGradient"
-                          x1="0"
-                          y1="1"
-                          x2="0"
-                          y2="0"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#51a750"
-                            stopOpacity={1}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#9ddc9b"
-                            stopOpacity={1}
-                          />
-                        </linearGradient>
-                      </defs>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+            {/* 1. Chart Batang: Kategori Laporan */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 lg:col-span-2 flex flex-col min-h-[350px]">
+              <h2 className="text-sm font-bold mb-4 text-gray-800">
+                Jumlah Laporan berdasarkan Jenis Kategori
+              </h2>
+              <div className="flex-1 w-full min-h-[250px]">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={barChartData}
+                    margin={{ top: 10, right: 0, left: -20, bottom: 10 }}
+                    barCategoryGap="15%"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="colorGreenGradient"
+                        x1="0"
+                        y1="1"
+                        x2="0"
+                        y2="0"
+                      >
+                        <stop offset="0%" stopColor="#51a750" stopOpacity={1} />
+                        <stop
+                          offset="100%"
+                          stopColor="#9ddc9b"
+                          stopOpacity={1}
+                        />
+                      </linearGradient>
+                    </defs>
 
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 9, fill: "#4b5563" }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={0}
-                        height={50}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip cursor={{ fill: "#f3f4f6" }} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 9, fill: "#4b5563" }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      height={50}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip cursor={{ fill: "#f3f4f6" }} />
 
-                      <Bar
-                        dataKey="Jumlah"
-                        fill="url(#colorGreenGradient)"
-                        /* Menaikkan radius menjadi 12 agar efek melengkungnya serasi dengan batang yang menebal */
-                        radius={[12, 12, 0, 0]}
-                        /* 3. HAPUS ATAU BEBASKAN nilai barSize statis ({35}) agar dia otomatis 
-         melebar mengikuti ruang yang tersedia berkat barCategoryGap di atas */
+                    <Bar
+                      dataKey="Jumlah"
+                      fill="url(#colorGreenGradient)"
+                      radius={[12, 12, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 2. Chart Donut/Pie: Status Penanganan */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col justify-between min-h-[350px]">
+              <h2 className="text-sm font-bold mb-2 text-gray-800">
+                Proporsi Status Penanganan
+              </h2>
+              <div className="flex-1 w-full min-h-[180px] flex items-center justify-center">
+                {pieChartData.length === 0 ? (
+                  <p className="text-xs text-gray-400">Tidak ada data status</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: "10px" }}
                       />
-                    </BarChart>
+                    </PieChart>
                   </ResponsiveContainer>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -487,7 +517,7 @@ export default function AdminDashboardPageCoba() {
                     Belum ada data laporan masuk.
                   </p>
                 ) : (
-                  <table className="w-full text-left border-collapse text-xs">
+                  <table className="w-full text-center border-collapse text-xs">
                     <thead>
                       <tr className="border-b border-gray-100 text-gray-400 font-semibold">
                         <th className="pb-3">ID</th>
