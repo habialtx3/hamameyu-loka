@@ -260,7 +260,7 @@ export default function UserDashboardPage() {
                 Belum ada laporan keluhan yang Anda buat saat ini.
               </div>
             ) : (
-              reports.map((report) => {
+              reports.slice(0,4).map((report) => {
                 // 1. Ambil style dinamis bodi kartu & badge status dari fungsi helper kamu
                 const cardStyle = getCardStyle(report.status);
                 const badgeStyle = getBadgeStyle(report.status);
