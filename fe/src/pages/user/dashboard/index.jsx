@@ -7,23 +7,38 @@ export default function UserDashboardPage() {
   const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch data menggunakan reportService
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // 1. Ambil data user yang sedang login saat ini dari API Me
+        const authResponse = await fetch("http://localhost:5000/api/auth/me", {
+          method: "GET",
+          credentials: "include", // Wajib agar cookie token ikut terkirim
+        });
+
+        if (!authResponse.ok) {
+          throw new Error("Sesi login tidak valid atau kedaluwarsa");
+        }
+
+        const authData = await authResponse.json();
+        const currentUserId = authData.user?.id; // Mendapatkan ID user dinamis (misal: 10, 12, dll)
+
+        // 2. Ambil semua data laporan dari reportService
         const responseJson = await reportService.getAllReports();
         
-        // Memastikan responseJson sukses / memiliki struktur data yang benar
-        if (responseJson && responseJson.success) {
-          // Filter hanya report milik user_id 8 untuk dashboard personal resident
-          const myReports = responseJson.data.filter(
-            (item) => item.user_id === 8
-          );
-          setReports(myReports);
-        } else if (Array.isArray(responseJson)) {
-          // Jaga-jaga jika backend langsung mengembalikan array data tanpa pembungkus .success
-          const myReports = responseJson.filter((item) => item.user_id === 8);
-          setReports(myReports);
+        if (currentUserId) {
+          if (responseJson && responseJson.success) {
+            // Filter menggunakan ID user yang dinamis, bukan angka 8 lagi
+            const myReports = responseJson.data.filter(
+              (item) => item.user_id === currentUserId
+            );
+            setReports(myReports);
+          } else if (Array.isArray(responseJson)) {
+            const myReports = responseJson.filter(
+              (item) => item.user_id === currentUserId
+            );
+            setReports(myReports);
+          }
         }
       } catch (error) {
         console.error("Gagal mengambil data di komponen:", error);
@@ -38,9 +53,11 @@ export default function UserDashboardPage() {
   // Hitung data statistik secara dinamis
   const totalComplaints = reports.length;
   const processedComplaints = reports.filter(
-    (r) => r.status === "processing",
+    (r) => r.status === "processing" || r.status === "diproses",
   ).length;
-  const resolvedComplaints = reports.filter((r) => r.status === "done").length;
+  const resolvedComplaints = reports.filter(
+    (r) => r.status === "done" || r.status === "selesai"
+  ).length;
 
   // Mengatur warna bodi kartu, ketebalan border, dan warna teks utama berdasarkan status
   const getCardStyle = (status) => {
@@ -84,10 +101,14 @@ export default function UserDashboardPage() {
   const getStatusLabel = (status) => {
     switch (status?.toLowerCase()) {
       case "received":
+      case "pending":
+      case "diterima":
         return "Diterima";
       case "processing":
+      case "diproses":
         return "Diproses";
       case "done":
+      case "selesai":
         return "Selesai";
       default:
         return status;
@@ -240,7 +261,8 @@ export default function UserDashboardPage() {
                 Belum ada laporan keluhan yang Anda buat saat ini.
               </div>
             ) : (
-              reports.slice(0, 4).map((report) => {
+              // Menghapus pembatasan slice(0, 4) agar seluruh list report milik user tersebut tampil
+              reports.map((report) => {
                 const cardStyle = getCardStyle(report.status);
                 const badgeStyle = getBadgeStyle(report.status);
 
