@@ -1,6 +1,25 @@
 const BASE_URL = 'http://localhost:5000/api';
 
 export const reportService = {
+  // 1. Create Report menggunakan format JSON murni
+  createReport: async (reportData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/reports`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json", // Wajib ada untuk mengirim JSON
+        },
+        credentials: "include", // Tetap wajib agar cookie token (JWT) kamu ikut terkirim
+        body: JSON.stringify(reportData), // Mengubah objek data menjadi string JSON
+      });
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Gagal membuat laporan di service:", error);
+      return { success: false, message: "Terjadi kesalahan jaringan." };
+    }
+  },
+  
   // 3. Get All Reports
   getAllReports: async () => {
     try {

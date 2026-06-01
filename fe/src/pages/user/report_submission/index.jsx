@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 // Import aset gambar marker default agar tidak pecah/hilang saat di-render
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { reportService } from "../../../services/api";
 
 let DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -58,37 +59,36 @@ export default function ReportSubmissionPage() {
   };
 
   const onSubmit = async (data) => {
-    // Validasi dasar agar user memilih kategori
+    // 1. Validasi dasar agar user memilih kategori
     if (!data.category) {
       alert("Silakan pilih kategori laporan terlebih dahulu.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", data.title);
-    formData.append("description", data.description); // Menyesuaikan parameter api backend
-    formData.append("category", data.category);
-    formData.append("priority", data.priority);
-    
-    // Kirim koordinat dinamis hasil klik user pada peta Leaflet
-    formData.append("latitude", mapCoords.lat.toFixed(6));
-    formData.append("longitude", mapCoords.lng.toFixed(6));
-
-    // Validasi berkas lampiran gambar (Maksimal 2 file gambar @2MB)
-    if (data.images && data.images.length > 0) {
-      const maxFiles = Math.min(data.images.length, 2);
-      for (let i = 0; i < maxFiles; i++) {
-        formData.append("images", data.images[i]);
-      }
-    }
+    // 2. Susun payload dalam bentuk Objek JSON murni (Persis seperti format Postman Anda)
+    const reportPayload = {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      priority: data.priority,
+      location: {
+        latitude: parseFloat(mapCoords.lat.toFixed(6)),
+        longitude: parseFloat(mapCoords.lng.toFixed(6))
+      },
+      // Karena kita mengirim JSON murni, untuk sementara kita kirim array gambar kosong 
+      // agar tidak bentrok dengan parser biner Multer yang eror di rute ini.
+      images: [] 
+    };
 
     try {
+      // 3. Tembak API menggunakan JSON murni
       const response = await fetch("http://localhost:5000/api/reports", {
         method: "POST",
         headers: {
-          "x-user-id": "1", // Mock User ID
+          "Content-Type": "application/json", // Mengayunkan jalur ke express.json() di backend
         },
-        body: formData,
+        credentials: "include", // Supaya cookie token (JWT) Anda ikut terkirim untuk dibaca oleh req.user.id
+        body: JSON.stringify(reportPayload), // Ubah objek menjadi string JSON
       });
 
       const result = await response.json();
@@ -100,7 +100,7 @@ export default function ReportSubmissionPage() {
         alert(result.message || "Gagal mengirimkan laporan.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error saat submit JSON:", error);
       alert("Terjadi kesalahan koneksi server.");
     }
   };
