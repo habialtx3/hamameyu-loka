@@ -59,11 +59,19 @@ class ReportController {
   async getReportById(req, res, next) {
     try {
       const { id } = req.params;
+
+      // Mengonversi string ':id' dari URL menjadi Integer untuk query database
       const report = await reportService.getReportById(parseInt(id));
-      if (!report) return sendError(res, `Report with ID ${id} not found.`, 404);
+
+      // Jika data memang tidak ada di database, pastikan dia mengembalikan status 404
+      if (!report) {
+        return sendError(res, `Report with ID ${id} not found.`, 404);
+      }
+
+      // Jika ada, kirim status 200 dengan datanya
       return sendSuccess(res, 'Report detail retrieved successfully.', report);
     } catch (error) {
-      next(error);
+      next(error); // Melempar ke error handler jika query database crash
     }
   }
 
