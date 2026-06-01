@@ -1,34 +1,38 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../../components/navbar";
+import { reportService } from "../../../services/api";
 
 export default function UserDashboardPage() {
   const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch data dari backend
+  // Fetch data menggunakan reportService
   useEffect(() => {
-    fetch("http://localhost:5000/api/reports", {
-      method: "GET",
-      headers: {
-        "x-user-id": "1", // Mock User ID sesuai dokumentasi backend Anda
-      },
-    })
-      .then((res) => res.json())
-      .then((responseJson) => {
-        if (responseJson.success) {
-          // Filter hanya report milik user_id 1 untuk dashboard personal resident
+    const fetchDashboardData = async () => {
+      try {
+        const responseJson = await reportService.getAllReports();
+        
+        // Memastikan responseJson sukses / memiliki struktur data yang benar
+        if (responseJson && responseJson.success) {
+          // Filter hanya report milik user_id 8 untuk dashboard personal resident
           const myReports = responseJson.data.filter(
-            (item) => item.user_id === 1,
+            (item) => item.user_id === 8
           );
           setReports(myReports);
+        } else if (Array.isArray(responseJson)) {
+          // Jaga-jaga jika backend langsung mengembalikan array data tanpa pembungkus .success
+          const myReports = responseJson.filter((item) => item.user_id === 8);
+          setReports(myReports);
         }
+      } catch (error) {
+        console.error("Gagal mengambil data di komponen:", error);
+      } finally {
         setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Gagal mengambil data:", error);
-        setIsLoading(false);
-      });
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   // Hitung data statistik secara dinamis
@@ -44,44 +48,20 @@ export default function UserDashboardPage() {
       case "received":
       case "pending":
       case "diterima":
-        // Latar belakang putih bersih, border abu-abu tebal & putus-putus
         return "bg-white border-2 border-dashed border-gray-400 hover:bg-gray-50 text-gray-900";
 
       case "processing":
       case "diproses":
-        // Latar belakang Kuning/Amber tegas, teks teks hitam/gelap pekat untuk kontras maksimal
         return "bg-amber-400 border border-amber-500 hover:bg-amber-500 text-black";
 
       case "done":
       case "selesai":
-        // Latar belakang Hijau solid, komponen teks di dalamnya otomatis putih bersih
         return "bg-[#51a750] border border-[#449144] hover:bg-[#459144] text-white";
 
       default:
         return "bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-900";
     }
   };
-
-  // Mengatur warna badge kecil status agar kontras dengan warna bodi kartu di belakangnya
-  // const getBadgeStyle = (status) => {
-  //   switch (status?.toLowerCase()) {
-  //     case "received":
-  //     case "pending":
-  //     case "diterima":
-  //       // Badge abu-abu di atas bodi putih
-  //       return "bg-gray-800 text-white";
-  //     case "processing":
-  //     case "diproses":
-  //       // Badge hitam pekat di atas bodi kuning amber agar terbaca jelas
-  //       return "bg-black text-white";
-  //     case "done":
-  //     // Badge putih transparan/solid di atas bodi hijau
-  //     case "selesai":
-  //       return "bg-white text-[#51a750]";
-  //     default:
-  //       return "bg-gray-200 text-gray-800";
-  //   }
-  // };
 
   // Mengatur warna teks & badge kecil status di dalam kartu
   const getBadgeStyle = (status) => {
@@ -260,12 +240,10 @@ export default function UserDashboardPage() {
                 Belum ada laporan keluhan yang Anda buat saat ini.
               </div>
             ) : (
-              reports.slice(0,4).map((report) => {
-                // 1. Ambil style dinamis bodi kartu & badge status dari fungsi helper kamu
+              reports.slice(0, 4).map((report) => {
                 const cardStyle = getCardStyle(report.status);
                 const badgeStyle = getBadgeStyle(report.status);
 
-                // 2. Cek status laporan saat ini untuk menentukan warna teks sekunder & tombol
                 const isDone =
                   report.status?.toLowerCase() === "done" ||
                   report.status?.toLowerCase() === "selesai";
@@ -273,14 +251,12 @@ export default function UserDashboardPage() {
                   report.status?.toLowerCase() === "processing" ||
                   report.status?.toLowerCase() === "diproses";
 
-                // 3. Atur warna teks deskripsi (ID & Tanggal) agar tidak tenggelam di background pekat
                 const textMetaColor = isDone
                   ? "text-green-100/90"
                   : isProcessing
                     ? "text-amber-950/70"
                     : "text-gray-400";
 
-                // 4. Atur warna teks judul laporan
                 const textTitleColor = isDone
                   ? "text-white"
                   : isProcessing
@@ -346,7 +322,7 @@ export default function UserDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Tombol Aksi yang dinamis mengikuti warna latar belakang bodi kartu */}
+                    {/* Tombol Aksi */}
                     <div className="flex items-center sm:justify-end shrink-0 w-full sm:w-auto">
                       <Link
                         to={`/reports/${report.id}`}

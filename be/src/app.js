@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost:3000', // Ganti dengan URL React Anda
+    origin: 'http://localhost:5173', // Ganti dengan URL React Anda
     credentials: true 
 }));
 
