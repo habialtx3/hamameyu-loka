@@ -6,7 +6,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // State untuk handling loading dan error
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,9 +26,9 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        // PENTING: credentials include wajib dicantumkan agar browser mau menerima 
+        // PENTING: credentials include wajib dicantumkan agar browser mau menerima
         // dan menyimpan cookie (set-cookie) dari domain backend yang berbeda port.
-        credentials: "include", 
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -39,13 +39,15 @@ export default function LoginPage() {
 
       // 3. Validasi Role dan Redirect
       if (data.role === "resident") {
-        // Karena React Router mengontrol base URL (http://localhost:5173),
-        // cukup arahkan langsung ke path "/dashboard"
+        // Jika resident, arahkan ke dashboard user
         navigate("/dashboard");
+      } else if (data.role === "admin") {
+        // Jika admin, arahkan ke dashboard admin sesuai rute yang kamu buat
+        navigate("/admin/dashboard");
       } else {
-        setError("Akses ditolak. Role Anda bukan resident.");
+        // Jika ada role lain yang tidak terdaftar
+        setError("Akses ditolak. Role Anda tidak dikenali.");
       }
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -150,9 +152,19 @@ export default function LoginPage() {
                       viewBox="0 0 24 24"
                     >
                       {showPassword ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+                        />
                       ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       )}
                     </svg>
                     {showPassword ? "Hide" : "Show"}
@@ -193,7 +205,9 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isLoading}
                   className={`w-full text-white rounded-full py-3 text-sm font-semibold mb-6 shadow-sm transition ${
-                    isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
+                    isLoading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-black hover:bg-gray-800"
                   }`}
                 >
                   {isLoading ? "Signing in..." : "Sign in"}
