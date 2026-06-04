@@ -1,5 +1,4 @@
-gh repo deploy-key --help &> /dev/null # Hanya trik agar terminal siap menerima input text
-cat << 'EOF' > README.md
+
 # 🌐 Envireport - Fullstack Setup Guide
 
 Selamat datang di proyek Envireport! Repositori ini dibagi menjadi dua bagian utama:
