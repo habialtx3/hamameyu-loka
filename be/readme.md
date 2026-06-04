@@ -1,382 +1,260 @@
-import { useEffect, useState } from "react";
-import { reportService } from "./reportService"; // Sesuaikan path file service kamu
+# Api dan Backend Specs
 
-export default function AdminReportsPage() {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // State untuk Filter & Search
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Semua Status");
+Sistem Backend **Envireport** adalah platform pelaporan masalah lingkungan berbasis API. Dokumentasi ini mencakup arsitektur database, sistem keamanan berbasis Cookie-JWT, dan spesifikasi lengkap setiap endpoint.
 
-  // Ambil data dari API saat komponen di-mount
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const response = await reportService.getAllReports();
-        if (response && response.success) {
-          setReports(response.data || []);
-        } else {
-          throw new Error(response.message || "Gagal memuat data laporan");
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+## 🗄️ 1. Arsitektur Database (Skema Tabel)
 
-    fetchReports();
-  }, []);
+Backend ini menggunakan relational database (MySQL/Postgres) dengan 2 tabel utama yang saling berelasi (*One-to-Many* antara `users` dan `reports`).
 
-  // Menghitung ringkasan secara dinamis dari data API
-  const totalReports = reports.length;
-  const processedReports = reports.filter(r => r.status === "processed" || r.status === "Diproses").length;
-  const resolvedReports = reports.filter(r => r.status === "resolved" || r.status === "Selesai").length;
+### A. Tabel `users`
 
-  // Helper untuk formatting visual status dari API (pending, processed, resolved)
-  const getStatusLabel = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "Diterima";
-      case "processed":
-        return "Diproses";
-      case "resolved":
-        return "Selesai";
-      default:
-        return status || "Diterima";
-    }
-  };
+Menyimpan informasi akun pengguna dan peran (role) mereka untuk hak akses.
 
-  const getStatusStyle = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "bg-gray-100 text-gray-600";
-      case "processed":
-        return "bg-yellow-100 text-yellow-700";
-      case "resolved":
-        return "bg-green-100 text-green-700";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
+| **Nama Kolom** | **Tipe Data** | **Atribut** | **Keterangan** |
+| --- | --- | --- | --- |
+| `id` | INT / BIGINT | Primary Key, Auto Increment | ID unik pengguna |
+| `name` | VARCHAR(255) | NOT NULL | Nama lengkap |
+| `username` | VARCHAR(100) | NOT NULL, UNIQUE | Username untuk login |
+| `email` | VARCHAR(255) | NOT NULL, UNIQUE | Email aktif |
+| `password` | VARCHAR(255) | NOT NULL | Hash password (BCrypt) |
+| `role` | ENUM / VARCHAR | NOT NULL (Default: `'resident'`) | Pilihan: `'resident'`, `'admin'`, `'staff'` |
+| `created_at` | TIMESTAMP | Default: `CURRENT_TIMESTAMP` | Waktu pendaftaran |
 
-  // Format tanggal ISO API menjadi format lokal yang rapi
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-  };
+### B. Tabel `reports`
 
-  // Filter logika untuk Search Bar & Dropdown Status
-  const filteredReports = reports.filter((item) => {
-    const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.id?.toString().includes(searchQuery);
-    
-    let matchesStatus = true;
-    if (statusFilter !== "Semua Status") {
-      const mappedStatus = getStatusLabel(item.status);
-      matchesStatus = mappedStatus === statusFilter;
-    }
+Menyimpan data laporan masalah lingkungan yang dikirim oleh masyarakat.
 
-    return matchesSearch && matchesStatus;
-  });
+| **Nama Kolom** | **Tipe Data** | **Atribut** | **Keterangan** |
+| --- | --- | --- | --- |
+| `id` | INT / BIGINT | Primary Key, Auto Increment | ID unik laporan |
+| `user_id` | INT / BIGINT | Foreign Key ➡️ `users.id` | Pengirim laporan (diambil dari JWT) |
+| `title` | VARCHAR(255) | NOT NULL | Judul laporan |
+| `description` | TEXT | NOT NULL | Detail kronologi masalah |
+| `category` | VARCHAR(100) | NOT NULL | Contoh: `TREES_AND_GREEN_SPACE`, `ROAD_AND_SIDEWALK` |
+| `priority` | ENUM / VARCHAR | NOT NULL (Default: `'medium'`) | Pilihan: `'low'`, `'medium'`, `'high'` |
+| `province` | VARCHAR(100) | NULLABLE | Provinsi lokasi kejadian |
+| `city` | VARCHAR(100) | NULLABLE | Kota / Kabupaten |
+| `district` | VARCHAR(100) | NULLABLE | Kecamatan |
+| `village` | VARCHAR(100) | NULLABLE | Kelurahan / Desa |
+| `rt` | VARCHAR(5) | NULLABLE | Rukun Tetangga |
+| `rw` | VARCHAR(5) | NULLABLE | Rukun Warga |
+| `latitude` | DECIMAL(10, 8) | NOT NULL | Koordinat Lintang |
+| `longitude` | DECIMAL(11, 8) | NOT NULL | Koordinat Bujur |
+| `images` | TEXT / JSON | NULLABLE | Path/URL foto bukti (Array string) |
+| `status` | ENUM / VARCHAR | NOT NULL (Default: `'pending'`) | Pilihan: `'pending'`, `'in_progress'`, `'done'` |
+| `created_at` | TIMESTAMP | Default: `CURRENT_TIMESTAMP` | Waktu laporan dibuat |
 
-  return (
-    <div className="bg-[#f6faf7] min-h-screen lg:flex">
-      {/* SIDEBAR */}
+## 🔐 2. Sistem Keamanan & Autentikasi (Middleware)
 
-      {/* MAIN */}
-      <main className="flex-1 overflow-y-auto">
-        {/* TOPBAR */}
-        <header className="px-4 sm:px-6 lg:px-10 py-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-black">
-              Semua Laporan
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Kelola seluruh laporan warga Kota Batam.
-            </p>
-          </div>
+Sistem tidak menggunakan header `Authorization: Bearer <token>`, melainkan menggunakan **HttpOnly Cookies**. Token JWT akan disimpan otomatis oleh browser/client di dalam cookie bernama `token` saat login berhasil.
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-            <input 
-              type="text" 
-              placeholder="Cari laporan..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white border border-gray-200 rounded-full px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#51a750]/20 w-full"
-            />
-            {/* CUSTOM SELECT */}
-            <div className="relative">
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none bg-white border border-gray-200 rounded-full px-5 py-3 pr-12 text-sm focus:outline-none w-full"
-              >
-                <option>Semua Status</option>
-                <option>Diterima</option>
-                <option>Diproses</option>
-                <option>Selesai</option>
-              </select>
-              {/* CUSTOM ARROW */}
-              <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                ▼
-              </span>
-            </div>
+### Alur Kerja Middleware:
 
-            <button className="bg-[#51a750] hover:bg-[#459144] text-white px-6 py-3 rounded-full text-sm font-semibold transition whitespace-nowrap">
-              Export Data
-            </button>
-          </div>
-        </header>
+1. **`authenticateToken`**: Memvalidasi cookie `token`. Jika valid, data user disimpan ke dalam objek `req.user`.
+2. **`authorizeRoles(...allowedRoles)`**: Memeriksa apakah `req.user.role` diizinkan mengakses endpoint terkait.
 
-        <div className="px-4 sm:px-6 lg:px-10 pb-10">
-          {/* SUMMARY */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-            <div className="bg-white border border-[#edf3ee] rounded-[28px] p-6">
-              <p className="text-sm text-gray-500">Total Laporan</p>
-              <h2 className="text-3xl font-black mt-2 text-black">
-                {loading ? "..." : totalReports.toLocaleString("id-ID")}
-              </h2>
-            </div>
+> ⚠️ **Penting untuk Frontend/Mobile:** Pastikan mengaktifkan opsi `withCredentials: true` pada library HTTP client Anda (seperti Axios atau Fetch) agar cookie otomatis terkirim di setiap request.
+> 
 
-            <div className="bg-white border border-[#edf3ee] rounded-[28px] p-6">
-              <p className="text-sm text-gray-500">Sedang Diproses</p>
-              <h2 className="text-3xl font-black mt-2 text-yellow-600">
-                {loading ? "..." : processedReports.toLocaleString("id-ID")}
-              </h2>
-            </div>
+## 🚀 3. Spesifikasi API Endpoints
 
-            <div className="bg-white border border-[#edf3ee] rounded-[28px] p-6 sm:col-span-2 xl:col-span-1">
-              <p className="text-sm text-gray-500">Laporan Selesai</p>
-              <h2 className="text-3xl font-black mt-2 text-green-600">
-                {loading ? "..." : resolvedReports.toLocaleString("id-ID")}
-              </h2>
-            </div>
-          </div>
+**Base URL:** `http://localhost:5000/api`
 
-          {/* TABLE CONTAINER */}
-          <div className="bg-white rounded-[30px] border border-[#edf3ee] p-4 sm:p-6 overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-black">
-                  Data Laporan Warga
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Menampilkan seluruh laporan yang masuk.
-                </p>
-              </div>
+### 🔑 Modul: Authentication (`/auth`)
 
-              <button className="bg-[#eef9f0] text-[#51a750] px-5 py-2.5 rounded-full text-sm font-semibold w-full sm:w-fit">
-                + Tambah Laporan
-              </button>
-            </div>
+### 1. Register Akun
 
-            {/* KONDISI LOADING & ERROR */}
-            {loading && (
-              <div className="text-center py-10 text-gray-500 text-sm">
-                Sedang mengambil data laporan dari server...
-              </div>
-            )}
+- **Method:** `POST`
+- **Path:** `/auth/register`
+- **Akses:** Publik (Tanpa Login)
+- **Request Body (JSON):**
 
-            {error && (
-              <div className="text-center py-10 text-red-500 text-sm bg-red-50 rounded-2xl p-4 border border-red-100">
-                ⚠️ Oopps! {error}
-              </div>
-            )}
+JSON
 
-            {/* KONDISI JIKA DATA KOSONG */}
-            {!loading && !error && filteredReports.length === 0 && (
-              <div className="text-center py-10 text-gray-400 text-sm">
-                Tidak ada laporan yang cocok dengan pencarian atau filter Anda.
-              </div>
-            )}
-
-            {/* MOBILE CARD VIEW */}
-            {!loading && !error && filteredReports.length > 0 && (
-              <div className="grid grid-cols-1 gap-4 lg:hidden">
-                {filteredReports.map((item, index) => (
-                  <div
-                    key={item.id || index}
-                    className="border border-[#edf3ee] rounded-[24px] p-5 bg-[#fcfffc]"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-[#eef9f0] flex items-center justify-center text-xl">
-                          📍
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-black text-sm line-clamp-1">
-                            {item.title}
-                          </h3>
-                          <p className="text-xs text-gray-400 mt-1">
-                            ID: #{item.id}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold whitespace-nowrap ${getStatusStyle(item.status)}`}>
-                        {getStatusLabel(item.status)}
-                      </span>
-                    </div>
-
-                    <div className="mt-5 space-y-3 text-sm">
-                      <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Lokasi Koordinat</span>
-                        <span className="font-medium text-gray-700 text-right text-xs">
-                          {item.location ? `${parseFloat(item.location.latitude).toFixed(4)}, ${parseFloat(item.location.longitude).toFixed(4)}` : "Batam Centre"}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Kategori</span>
-                        <span className="bg-[#eef9f0] text-[#51a750] text-xs px-3 py-1 rounded-full font-medium capitalize">
-                          {item.category}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">ID Pelapor</span>
-                        <span className="font-medium text-gray-700 text-right">
-                          Warga (User ID: {item.user_id || "-"})
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Tanggal</span>
-                        <span className="font-medium text-gray-700 text-right">
-                          {formatDate(item.time_report)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 mt-5">
-                      <button className="flex-1 px-4 py-3 rounded-full text-sm bg-[#eef9f0] text-[#51a750] font-semibold">
-                        Detail
-                      </button>
-                      <button className="flex-1 px-4 py-3 rounded-full text-sm bg-[#f5f5f5] text-gray-600 font-semibold">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* DESKTOP TABLE VIEW */}
-            {!loading && !error && filteredReports.length > 0 && (
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full min-w-[1000px]">
-                  <thead>
-                    <tr className="text-left text-sm text-gray-400 border-b border-gray-100">
-                      <th className="pb-4 font-medium">ID</th>
-                      <th className="pb-4 font-medium">Laporan</th>
-                      <th className="pb-4 font-medium">Lokasi (Lat, Long)</th>
-                      <th className="pb-4 font-medium">Kategori</th>
-                      <th className="pb-4 font-medium">Pelapor</th>
-                      <th className="pb-4 font-medium">Tanggal</th>
-                      <th className="pb-4 font-medium">Status</th>
-                      <th className="pb-4 font-medium text-center">Aksi</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredReports.map((item, index) => (
-                      <tr
-                        key={item.id || index}
-                        className="border-b border-gray-50 hover:bg-[#f8fcf8] transition"
-                      >
-                        <td className="py-5 text-sm text-gray-500 font-medium">
-                          #{item.id}
-                        </td>
-
-                        <td className="py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-[#eef9f0] flex items-center justify-center text-lg">
-                              📍
-                            </div>
-                            <div>
-                              <p className="font-semibold text-sm text-black max-w-[200px] truncate">
-                                {item.title}
-                              </p>
-                              <span className="text-xs text-gray-400 capitalize">
-                                Priority: {item.priority || "medium"}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="text-sm text-gray-600 text-xs">
-                          {item.location ? `${parseFloat(item.location.latitude).toFixed(4)}, ${parseFloat(item.location.longitude).toFixed(4)}` : "Batam Centre"}
-                        </td>
-
-                        <td>
-                          <span className="bg-[#eef9f0] text-[#51a750] text-xs px-3 py-1 rounded-full font-medium capitalize">
-                            {item.category}
-                          </span>
-                        </td>
-
-                        <td className="text-sm text-gray-600">
-                          User ID: {item.user_id || "-"}
-                        </td>
-
-                        <td className="text-sm text-gray-500">
-                          {formatDate(item.time_report)}
-                        </td>
-
-                        <td>
-                          <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${getStatusStyle(item.status)}`}>
-                            {getStatusLabel(item.status)}
-                          </span>
-                        </td>
-
-                        <td>
-                          <div className="flex items-center justify-center gap-2">
-                            <button className="px-4 py-2 rounded-full text-xs bg-[#eef9f0] text-[#51a750] font-semibold hover:scale-105 transition">
-                              Detail
-                            </button>
-                            <button className="px-4 py-2 rounded-full text-xs bg-[#f5f5f5] text-gray-600 font-semibold hover:scale-105 transition">
-                              Edit
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* PAGINATION */}
-            {!loading && !error && filteredReports.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
-                <p className="text-sm text-gray-500">
-                  Menampilkan 1-{filteredReports.length} dari {filteredReports.length} laporan
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <button className="w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:bg-[#f5faf6] transition">
-                    ←
-                  </button>
-                  <button className="w-10 h-10 rounded-full bg-[#51a750] text-white font-semibold">
-                    1
-                  </button>
-                  <button className="w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:bg-[#f5faf6] transition">
-                    →
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+```
+{
+  "name": "Admin test",
+  "username": "admin11",
+  "email": "admin@gmail.com",
+  "password": "password"
 }
+```
+
+- **Response Sukses (201 Created):**
+
+JSON
+
+```
+{
+  "message": "Registrasi berhasil"
+}
+```
+
+### 2. Login
+
+- **Method:** `POST`
+- **Path:** `/auth/login`
+- **Akses:** Publik (Tanpa Login)
+- **Request Body (JSON):**
+
+JSON
+
+```
+{
+  "email": "ahma2212@mail.com",
+  "password": "passwordRahasia123"
+}
+```
+
+- **Response Sukses (200 OK):**
+    
+    *Backend otomatis mengeset Set-Cookie: `token=<JWT_DATA>; HttpOnly; Secure`*
+    
+
+JSON
+
+```
+{
+  "message": "Login berhasil",
+  "user": {
+    "id": 10,
+    "name": "Ahmad",
+    "role": "resident"
+  }
+}
+```
+
+### 3. Logout
+
+- **Method:** `POST`
+- **Path:** `/auth/logout`
+- **Akses:** Wajib Login (Cookie Aktif)
+- **Response Sukses (200 OK):**
+    
+    *Backend otomatis menghapus/membersihkan cookie `token`.*
+    
+
+JSON
+
+```
+{
+  "message": "Logout berhasil"
+}
+```
+
+### 📋 Modul: Reports (`/reports`)
+
+### 4. Create New Report (Buat Laporan)
+
+- **Method:** `POST`
+- **Path:** `/reports`
+- **Akses:** Wajib Login (Semua Role)
+- **Request Body (JSON):**
+
+JSON
+
+```
+{
+  "title": "Dahan Pohon Rindang Menutupi Kabel Listrik",
+  "description": "Pohon peneduh di depan ruko sudah terlalu rimbun dan dahannya mulai melilit kabel listrik tegangan tinggi.",
+  "category": "TREES_AND_GREEN_SPACE",
+  "priority": "medium",
+  "location": {
+    "latitude": -6.198231,
+    "longitude": 106.820111
+  },
+  "images": [
+    "/uploads/reports/pohon_kabel.jpg"
+  ]
+}
+```
+
+> *Catatan: `userId` tidak perlu dikirim di body karena backend otomatis mengambil ID dari JWT (`req.user.id`).*
+> 
+
+### 5. Get All Reports (Ambil Semua Laporan)
+
+- **Method:** `GET`
+- **Path:** `/reports`
+- **Akses:** Publik / Wajib Login (Sesuai kebijakan tim)
+- **Response Sukses (200 OK):**
+
+JSON
+
+```
+[
+  {
+    "id": 1,
+    "title": "Dahan Pohon Rindang...",
+    "status": "pending",
+    "created_at": "2026-06-04T07:00:00Z"
+  }
+]
+```
+
+### 6. Get Report By ID / Update Detail Wilayah
+
+- **Method:** `GET` / `PUT` *(Disarankan diganti ke PUT/PATCH jika ada pengiriman data)*
+- **Path:** `/reports/:id` (Contoh: `/reports/4`)
+- **Akses:** Wajib Login
+- **Request Body (Multipart Form-Data):**
+    
+    Digunakan untuk melengkapi data wilayah administratif atau mengunggah file gambar fisik.
+    
+    - `title`: `Mencoba`
+    - `description`: `Waduhh`
+    - `category`: `sampah`
+    - `priority`: `low`
+    - `province`: `kepulauan riau`
+    - `city`: `medan`
+    - `district`: `binje`
+    - `village`: `batu aji`
+    - `rt`: `08`
+    - `rw`: `08`
+    - `latitude`: `3.505050`
+    - `longitude`: `3.505050`
+    - `images`: `[File Gambar/Foto Fisik (.png/.jpg)]`
+
+### 7. Update Report Status (Ubah Status Laporan)
+
+- **Method:** `PATCH`
+- **Path:** `/reports/:id/status` (Contoh: `/reports/1/status`)
+- **Akses:** Otorisasi Khusus (`"admin"`, `"staff"`)
+- **Request Body (JSON):**
+
+JSON
+
+```
+{
+  "status" : "done"
+}
+```
+
+*(Pilihan status: `'pending'`, `'in_progress'`, `'done'`)*
+
+### 8. Get Report History (Riwayat Berfilter)
+
+- **Method:** `GET`
+- **Path:** `/reports/history`
+- **Akses:** Wajib Login
+- **Query Parameters:**
+    - `category` : `ROAD_AND_SIDEWALK` (Pilihan filter kategori)
+    - `start_time` : `2026-05-18T10:00:00Z` (Filter waktu mulai)
+
+### 9. Delete Report (Hapus Laporan)
+
+- **Method:** `DELETE`
+- **Path:** `/reports/:id` (Contoh: `/reports/2`)
+- **Akses:** Otorisasi Khusus (`"admin"`)
+
+## 🛠️ 4. Kode Respon Standar (HTTP Status Codes)
+
+Pastikan backend mengembalikan kode status berikut agar frontend dapat menangani error dengan seragam:
+
+- **`200 OK`**: Permintaan berhasil.
+- **`201 Created`**: Data/Akun baru berhasil dibuat.
+- **`400 Bad Request`**: Format input data salah atau ada parameter wajib yang kurang.
+- **`401 Unauthorized`**: Belum login (Cookie tidak ditemukan).
+- **`403 Forbidden`**: Token kedaluwarsa atau Role akun tidak memiliki hak akses ke endpoint tersebut.
+- **`404 Not Found`**: Data laporan atau rute URL tidak ditemukan.
+- **`500 Internal Server Error`**: Terjadi kesalahan pada server/database.
