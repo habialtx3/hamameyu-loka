@@ -2,14 +2,20 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const reportRoutes = require('./routes/report.routes');
+const authRoutes = require('./routes/auth.routes');
+const protectedRoutes = require('./routes/protected.routes');
+const cookieParser = require('cookie-parser');
 const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
 
-// Standard middlewares
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(cors({
+    origin: 'http://localhost:5173', // Ganti dengan URL React Anda
+    credentials: true 
+}));
 
 // Serve static uploaded files (uploads/ folder)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -32,6 +38,8 @@ app.get('/api/health', (req, res) => {
 
 // Register Routes (Mount at /api)
 app.use('/api', reportRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api', protectedRoutes);
 
 // 404 Route handler
 app.use((req, res, next) => {

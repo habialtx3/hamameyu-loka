@@ -22,7 +22,7 @@ export default function UserReportsPage() {
       if (responseJson.success && Array.isArray(responseJson.data)) {
         // FILTER: Hanya mengambil laporan milik user_id 1 (Personal Resident)
         const myReports = responseJson.data.filter(
-          (item) => item.user_id === 1,
+          (item) => item.user_id === 8,
         );
         setReports(myReports);
       }

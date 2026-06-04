@@ -11,7 +11,7 @@ class ReportService {
   async createReport({ userId, title, description, category, priority, location, images }) {
     const pool = getPool();
     const conn = await pool.getConnection();
-    
+
     try {
       await conn.beginTransaction();
 
@@ -68,7 +68,12 @@ class ReportService {
    * Mengambil semua laporan beserta relasi lokasi dan array gambar (Aggregated)
    */
   async getAllReports() {
-    const reportsSql = `
+    // 1. Ambil pool koneksi seperti di fungsi createReport
+    const pool = getPool();
+
+    try {
+      // 2. Gunakan pool.execute untuk mengambil data laporan dan lokasi
+      const reportsSql = `
       SELECT 
         r.id, r.user_id, r.title, r.description, r.category, r.status, r.priority, r.time_report, r.time_close,
         l.id as location_id, l.latitude, l.longitude
@@ -76,41 +81,48 @@ class ReportService {
       JOIN locations l ON r.location_id = l.id
       ORDER BY r.time_report DESC
     `;
-    const reports = await query(reportsSql);
+      // mysql2 mengembalikan array [rows, fields], kita destructuring ambil rows-nya saja
+      const [reports] = await pool.execute(reportsSql);
 
-    if (reports.length === 0) return [];
+      if (reports.length === 0) return [];
 
-    // Ambil semua gambar sekaligus untuk efisiensi (menghindari N+1 query)
-    const imagesSql = `SELECT report_id, image_url FROM report_images`;
-    const images = await query(imagesSql);
+      // 3. Ambil semua gambar sekaligus (Menghindari N+1 Query)
+      const imagesSql = `SELECT report_id, image_url FROM report_images`;
+      const [images] = await pool.execute(imagesSql);
 
-    // Kelompokkan url gambar berdasarkan report_id
-    const imagesMap = {};
-    images.forEach(img => {
-      if (!imagesMap[img.report_id]) {
-        imagesMap[img.report_id] = [];
-      }
-      imagesMap[img.report_id].push(img.image_url);
-    });
+      // 4. Kelompokkan url gambar berdasarkan report_id (Logika kamu sudah mantap di sini)
+      const imagesMap = {};
+      images.forEach(img => {
+        if (!imagesMap[img.report_id]) {
+          imagesMap[img.report_id] = [];
+        }
+        imagesMap[img.report_id].push(img.image_url);
+      });
 
-    // Format output respons agar rapi
-    return reports.map(r => ({
-      id: r.id,
-      user_id: r.user_id,
-      title: r.title,
-      description: r.description,
-      category: r.category,
-      status: r.status,
-      priority: r.priority,
-      time_report: r.time_report,
-      time_close: r.time_close,
-      location: {
-        id: r.location_id,
-        latitude: r.latitude,
-        longitude: r.longitude
-      },
-      images: imagesMap[r.id] || []
-    }));
+      // 5. Format output respons agar rapi dan terstruktur
+      return reports.map(r => ({
+        id: r.id,
+        user_id: r.user_id,
+        title: r.title,
+        description: r.description,
+        category: r.category,
+        status: r.status,
+        priority: r.priority,
+        time_report: r.time_report,
+        time_close: r.time_close,
+        location: {
+          id: r.location_id,
+          latitude: r.latitude,
+          longitude: r.longitude
+        },
+        images: imagesMap[r.id] || []
+      }));
+
+    } catch (error) {
+      // Selalu tangkap error agar jika gagal ketahuan log-nya di terminal
+      console.error("Error di getAllReports Service:", error);
+      throw error;
+    }
   }
 
   /**
