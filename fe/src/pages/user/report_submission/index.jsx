@@ -65,33 +65,26 @@ export default function ReportSubmissionPage() {
       return;
     }
 
-    // 2. Susun payload dalam bentuk Objek JSON murni (Persis seperti format Postman Anda)
-    const reportPayload = {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      priority: data.priority,
-      location: {
-        latitude: parseFloat(mapCoords.lat.toFixed(6)),
-        longitude: parseFloat(mapCoords.lng.toFixed(6))
-      },
-      // Karena kita mengirim JSON murni, untuk sementara kita kirim array gambar kosong 
-      // agar tidak bentrok dengan parser biner Multer yang eror di rute ini.
-      images: [] 
-    };
+    // 2. Susun payload dalam bentuk FormData
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("description", data.description);
+    formData.append("category", data.category);
+    formData.append("priority", data.priority);
+    formData.append("location[latitude]", parseFloat(mapCoords.lat.toFixed(6)));
+    formData.append("location[longitude]", parseFloat(mapCoords.lng.toFixed(6)));
+
+    // Append gambar (maksimal 2)
+    if (data.images && data.images.length > 0) {
+      const filesToUpload = Array.from(data.images).slice(0, 2);
+      filesToUpload.forEach((file) => {
+        formData.append("images", file); // Field name wajib 'images' sesuai multer di backend
+      });
+    }
 
     try {
-      // 3. Tembak API menggunakan JSON murni
-      const response = await fetch("http://localhost:5000/api/reports", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json", // Mengayunkan jalur ke express.json() di backend
-        },
-        credentials: "include", // Supaya cookie token (JWT) Anda ikut terkirim untuk dibaca oleh req.user.id
-        body: JSON.stringify(reportPayload), // Ubah objek menjadi string JSON
-      });
-
-      const result = await response.json();
+      // 3. Tembak API menggunakan reportService
+      const result = await reportService.createReport(formData);
 
       if (result.success) {
         alert("Laporan Anda berhasil dikirim ke sistem aduan warga.");
@@ -100,7 +93,7 @@ export default function ReportSubmissionPage() {
         alert(result.message || "Gagal mengirimkan laporan.");
       }
     } catch (error) {
-      console.error("Error saat submit JSON:", error);
+      console.error("Error saat submit FormData:", error);
       alert("Terjadi kesalahan koneksi server.");
     }
   };

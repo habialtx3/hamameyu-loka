@@ -1,8 +1,8 @@
-ternyata ada sebuah refactor bahwa category report itu hanya :
-WASTE
-SIGNS_AND_MARKINGS
-PUBLIC_FACILITIES
-ROAD_AND_SIDEWALK
-TREES_AND_GREEN_SPACE
+rombak isi @issue.md semuanya lalu issue yang berisi general idea nya itu :
 
-buatkan update issue md agar memecahkan persoalan ini dan pastikan agar dibuat langkah-langkah implementasi nya agar bisa dikerjakan oleh junior/mid developer atau ai model yang murah
+buatkan branch baru yang berisi intinya penambahan fitur yaitu upload gambar
+ada pun upload gambar itu dia maximal nya 2
+
+ikuti @schema.sql untuk skema database nya, lalu implementasikan dan tambahkan ke fitur backend
+
+pastikan intsruksi yang dibuat di issue.md itu mudah dipahami oleh programmer junior / mid atau model yang lebih murah
