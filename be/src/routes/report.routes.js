@@ -40,7 +40,15 @@ router.post('/reports', authenticateToken, (req, res, next) => {
     return reportController.createReport(req, res, next);
   }
   upload.array('images', 2)(req, res, (err) => {
-    if (err) return res.status(400).json({ success: false, message: err.message });
+    if (err) {
+      let message = err.message;
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        message = 'Maksimal 2 gambar yang diperbolehkan.';
+      } else if (err.code === 'LIMIT_FILE_SIZE') {
+        message = 'Ukuran file maksimal adalah 2MB per gambar.';
+      }
+      return res.status(400).json({ success: false, message });
+    }
     reportController.createReport(req, res, next);
   });
 });

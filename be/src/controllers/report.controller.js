@@ -24,8 +24,37 @@ class ReportController {
         return sendError(res, 'Sesi tidak valid atau user_id tidak ditemukan. Silakan login kembali.', 401);
       }
 
-      const latitude = location?.latitude;
-      const longitude = location?.longitude;
+      let parsedLocation = location;
+      if (typeof location === 'string') {
+        try {
+          parsedLocation = JSON.parse(location);
+        } catch (e) {
+          // ignore parsing error
+        }
+      }
+
+      const latitude = parsedLocation?.latitude;
+      const longitude = parsedLocation?.longitude;
+
+      let imagesList = [];
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        imagesList = req.files.map(file => `/uploads/reports/${file.filename}`);
+      } else if (req.body.images) {
+        if (Array.isArray(req.body.images)) {
+          imagesList = req.body.images;
+        } else if (typeof req.body.images === 'string') {
+          try {
+            const parsed = JSON.parse(req.body.images);
+            imagesList = Array.isArray(parsed) ? parsed : [parsed];
+          } catch (e) {
+            imagesList = [req.body.images];
+          }
+        }
+      }
+
+      if (imagesList.length > 2) {
+        return sendError(res, 'Maksimal 2 gambar yang diperbolehkan.', 400);
+      }
 
       const reportData = {
         userId: finalUserId,
@@ -37,7 +66,7 @@ class ReportController {
           latitude: latitude !== undefined && latitude !== null ? parseFloat(latitude) : 0,
           longitude: longitude !== undefined && longitude !== null ? parseFloat(longitude) : 0
         },
-        images: req.body.images || []
+        images: imagesList
       };
 
       const newReport = await reportService.createReport(reportData);
