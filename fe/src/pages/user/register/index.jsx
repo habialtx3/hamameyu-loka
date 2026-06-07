@@ -112,7 +112,7 @@ export default function RegisterPage() {
             <p className="text-sm text-gray-600 text-center mb-6">
               Already have an account?{" "}
               <Link to={"/login"}>
-                <span className="text-blue-600 hover:underline">Login</span>
+                <span className="text-green-600 hover:underline font-medium">Login</span>
               </Link>
             </p>
 
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="John Doe"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 
@@ -152,7 +152,7 @@ export default function RegisterPage() {
                   value={formData.username}
                   onChange={handleChange}
                   placeholder="johndoe123"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 
@@ -168,7 +168,7 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="example@mail.com"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 
@@ -181,7 +181,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-500 hover:text-black flex items-center gap-1 text-[11px] font-medium"
+                    className="text-gray-500 hover:text-green-600 flex items-center gap-1 text-[11px] font-medium"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5 16.5 9.52 16.5 12 14.48 16.5 12 16.5zm0-8c-1.93 0-3.5 1.57-3.5 3.5S10.07 15.5 12 15.5 15.5 13.93 15.5 12 13.93 8.5 12 8.5z" />
@@ -196,11 +196,11 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 
-              {/* Checkbox Persetujuan */}
+              {/* Checkbox Persetujuan - DIPERTAHANKAN */}
               <div className="flex items-start gap-3 py-2">
                 <input
                   type="checkbox"
@@ -209,10 +209,10 @@ export default function RegisterPage() {
                   onChange={(e) => setAgreeTerms(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mt-1 cursor-pointer"
                 />
-                <label htmlFor="agree" className="text-sm text-gray-600 cursor-pointer">
+                <label htmlFor="agree" className="text-sm text-gray-600 cursor-pointer-select-none">
                   By creating an account, I agree to our{" "}
-                  <a href="#" className="text-blue-600 hover:underline">Terms of use</a> and{" "}
-                  <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+                  <a href="#" className="text-green-600 hover:underline font-medium">Terms of use</a> and{" "}
+                  <a href="#" className="text-green-600 hover:underline font-medium">Privacy Policy</a>
                 </label>
               </div>
 
@@ -222,7 +222,7 @@ export default function RegisterPage() {
                   type="submit"
                   disabled={loading}
                   className={`w-full text-white rounded-full py-3 text-sm font-semibold mb-6 shadow-sm transition-all ${
-                    loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-900"
+                    loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
                   }`}
                 >
                   {loading ? "Registering..." : "Sign Up"}

@@ -13,6 +13,7 @@ import FAQPage from "../pages/user/faq";
 import AdminReportsPage from "../pages/admin/reports";
 import AdminRedzonePage from "../pages/admin/map_redzone";
 import ProtectedRoute from "./protectedRoute";
+import UserReportsPage from "../pages/user/reports";
 
 // Import komponen proteksi yang baru kita buat
 
@@ -49,7 +50,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/reports",
-        element: <ReportPage />,
+        element: <UserReportsPage/>,
       },
       {
         path: "/reports/:id",
