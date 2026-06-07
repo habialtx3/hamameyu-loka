@@ -102,7 +102,7 @@ export default function LoginPage() {
             </h2>
             <p className="text-sm text-gray-600 text-center mb-8">
               Don't have an account?{" "}
-              <Link to="/register" className="text-blue-600 hover:underline">
+              <Link to="/register" className="text-green-600 hover:underline font-medium">
                 Create one
               </Link>
             </p>
@@ -129,11 +129,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 
-              <div>
+              <div className="mb-8">
                 <label
                   htmlFor="password"
                   className="block text-xs font-semibold text-gray-600 mb-2 relative"
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black flex items-center gap-1 text-[11px] font-medium"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-green-600 flex items-center gap-1 text-[11px] font-medium"
                   >
                     {/* SVG dinamis berganti sesuai status show/hide */}
                     <svg
@@ -176,38 +176,19 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
-              </div>
-
-              <div className="flex items-start mb-8 gap-3">
-                <input
-                  type="checkbox"
-                  id="agree"
-                  required
-                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mt-1"
-                />
-                <label htmlFor="agree" className="text-sm text-gray-600">
-                  By creating an account, I agree to our{" "}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Terms of use
-                  </a>{" "}
-                  and{" "}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Privacy Policy
-                  </a>
-                </label>
               </div>
 
               <div>
-                {/* Mengubah type ke "submit" dan memberi warna bg aktif saat tidak loading */}
+                {/* Mengubah warna ke tema hijau utama */}
                 <button
                   type="submit"
                   disabled={isLoading}
                   className={`w-full text-white rounded-full py-3 text-sm font-semibold mb-6 shadow-sm transition ${
                     isLoading
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-black hover:bg-gray-800"
+                      : "bg-green-600 hover:bg-green-700"
                   }`}
                 >
                   {isLoading ? "Signing in..." : "Sign in"}
