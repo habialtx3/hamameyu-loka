@@ -4,6 +4,7 @@ const path = require('path');
 const reportRoutes = require('./routes/report.routes');
 const authRoutes = require('./routes/auth.routes');
 const protectedRoutes = require('./routes/protected.routes');
+const userRoutes = require('./routes/user.routes'); // 🌟 TAMBAHKAN INI (Sesuaikan nama filenya)
 const cookieParser = require('cookie-parser');
 const errorHandler = require('./middlewares/error.middleware');
 
@@ -37,9 +38,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // Register Routes (Mount at /api)
+// Register Routes (Mount at /api)
 app.use('/api', reportRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
+app.use('/api', userRoutes); // 🌟 TAMBAHKAN INI!
 
 // 404 Route handler
 app.use((req, res, next) => {
