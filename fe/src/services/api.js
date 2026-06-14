@@ -1,7 +1,10 @@
 const BASE_URL = 'http://localhost:5000/api';
 
+// ==========================================
+// 1. REPORT SERVICE
+// ==========================================
 export const reportService = {
-  // 1. Create Report menggunakan FormData (mendukung upload gambar)
+  // Create Report menggunakan FormData (mendukung upload gambar)
   createReport: async (formData) => {
     try {
       const response = await fetch(`${BASE_URL}/reports`, {
@@ -17,7 +20,7 @@ export const reportService = {
     }
   },
   
-  // 3. Get All Reports
+  // Get All Reports
   getAllReports: async () => {
     try {
       const response = await fetch(`${BASE_URL}/reports`);
@@ -29,7 +32,7 @@ export const reportService = {
     }
   },
 
-  // 5. Update Report Status
+  // Update Report Status
   updateStatus: async (id, status) => {
     try {
       const response = await fetch(`${BASE_URL}/reports/${id}/status`, {
@@ -47,7 +50,7 @@ export const reportService = {
     }
   },
 
-  // 7. Get Historical Reports (Untuk tren visualisasi data)
+  // Get Historical Reports (Untuk tren visualisasi data)
   getHistory: async (category, startTime, limit = 100) => {
     try {
       const response = await fetch(
@@ -58,6 +61,45 @@ export const reportService = {
     } catch (error) {
       console.error(error);
       return { success: false, data: { report_count: 0, reports: {} } };
+    }
+  }
+};
+
+// ==========================================
+// 2. USER SERVICE (BARU 🌟)
+// ==========================================
+export const userService = {
+  // Ambil semua user untuk tabel manajemen admin
+  getAllUsers: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/users`, {
+        method: 'GET',
+        credentials: 'include' // 🌟 Wajib agar cookie token JWT ikut terkirim
+      });
+      if (!response.ok) throw new Error('Gagal mengambil daftar user');
+      return await response.json();
+    } catch (error) {
+      console.error("Error di userService.getAllUsers:", error);
+      return { success: false, data: [] };
+    }
+  },
+
+  // Mengubah role user (admin <-> resident)
+  updateUserRole: async (id, role) => {
+    try {
+      const response = await fetch(`${BASE_URL}/users/${id}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // 🌟 Wajib agar cookie token JWT ikut terkirim
+        body: JSON.stringify({ role }), // Mengirim objek { "role": "admin" / "resident" }
+      });
+      if (!response.ok) throw new Error('Gagal memperbarui role user');
+      return await response.json();
+    } catch (error) {
+      console.error("Error di userService.updateUserRole:", error);
+      return { success: false, message: "Gagal memperbarui role." };
     }
   }
 };

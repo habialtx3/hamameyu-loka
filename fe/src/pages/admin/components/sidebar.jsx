@@ -70,7 +70,7 @@ export default function Sidebar() {
               </Link>
 
               <Link
-                to="/admin/map_redzone"
+                to="/admin/map-redzone"
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-[#f5faf6] transition"
               >
                 <span>🗺</span>
@@ -83,6 +83,15 @@ export default function Sidebar() {
             <p className="text-xs font-bold text-gray-400 uppercase px-4 mb-3">
               Management
             </p>
+
+            
+              <Link
+                to="/admin/user-management"
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-[#f5faf6] transition"
+              >
+                <span>🗺</span>
+                User Management
+              </Link>
           </div>
         </nav>
 
